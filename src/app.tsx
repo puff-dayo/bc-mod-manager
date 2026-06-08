@@ -6,6 +6,10 @@ import ModManagerPage from "./page/modmanager/ModManagerPage.tsx";
 import LogManagerPage from "./page/logmanager/LogManagerPage.tsx";
 import ModalContainer from "./component/ModalContainer.tsx";
 import {ModLoaderService} from "./service/ModLoaderService.ts";
+import AppLauncher, {type AppLauncherItem} from "./component/AppLauncher.tsx";
+import AppBackdrop from "./component/ui/AppBackdrop.tsx";
+import AppShell from "./component/ui/AppShell.tsx";
+import CloseButton from "./component/ui/CloseButton.tsx";
 
 type PageType = 'mod-manager' | 'registry-manager' | 'log-viewer' | 'modal-test' | null;
 
@@ -70,64 +74,51 @@ export default class App extends Component<{}, AppState> {
 
   render() {
     const {menuOpen, currentPage} = this.state;
+    const launcherItems: AppLauncherItem[] = [
+      {
+        id: 'mod-manager',
+        label: i18n('button-mod-manager'),
+        onClick: () => this.openPage('mod-manager'),
+      },
+      {
+        id: 'registry-manager',
+        label: i18n('button-registry-manager'),
+        onClick: () => this.openPage('registry-manager'),
+      },
+      {
+        id: 'log-viewer',
+        label: i18n('button-log-viewer'),
+        onClick: () => this.openPage('log-viewer'),
+      },
+    ];
 
     return (
       <>
-        {/* Menu Button */}
-        {(this.state.showButton && !currentPage) && <div className="fixed top-4 right-12 z-50">
-          <button
-            className={`menu-button w-8 h-8 rounded-full bg-blue-800 text-white ${menuOpen ? 'open' : ''}`}
-            onClick={this.toggleMenu}
-          >
-            +
-          </button>
-
-          <div className="relative text-white text-xs">
-            <button
-              className={`sub-button w-28 h-8 bg-red-900 ${menuOpen ? 'open' : ''}`}
-              onClick={() => this.openPage('mod-manager')}
-            >
-              {i18n('button-mod-manager')}
-            </button>
-            <button
-              className={`sub-button w-28 h-8 bg-green-900 ${menuOpen ? 'open' : ''}`}
-              onClick={() => this.openPage('registry-manager')}
-            >
-              {i18n('button-registry-manager')}
-            </button>
-            <button
-              className={`sub-button w-28 h-8 bg-yellow-900 ${menuOpen ? 'open' : ''}`}
-              onClick={() => this.openPage('log-viewer')}
-            >
-              {i18n('button-log-viewer')}
-            </button>
-          </div>
-        </div>}
-
-        {/* Page Modal/Overlay */}
-        {currentPage && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 z-40 flex items-center justify-center p-4">
-            <div className="bg-white rounded-lg shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-auto relative">
-              {/* Close Button */}
-              <button
-                onClick={this.closePage}
-                className="sticky top-4 float-right mr-4 mt-4 w-10 h-10 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors z-50 flex items-center justify-center text-2xl font-bold"
-                title={i18n('button-close')}
-              >
-                ×
-              </button>
-
-              {/* Page Content */}
-              <div className="clear-both">
-                {currentPage === 'mod-manager' && <ModManagerPage/>}
-                {currentPage === 'registry-manager' && <RegistryManagerPage/>}
-                {currentPage === 'log-viewer' && <LogManagerPage/>}
-              </div>
-            </div>
-          </div>
+        {(this.state.showButton && !currentPage) && (
+          <AppLauncher
+            open={menuOpen}
+            onToggle={this.toggleMenu}
+            title="BC Mod Manager"
+            items={launcherItems}
+          />
         )}
 
-        {/* Modal Container */}
+        {currentPage && (
+          <AppBackdrop>
+            <AppShell>
+              <CloseButton
+                variant="app"
+                onClick={this.closePage}
+                title={i18n('button-close')}
+              />
+
+              {currentPage === 'mod-manager' && <ModManagerPage/>}
+              {currentPage === 'registry-manager' && <RegistryManagerPage/>}
+              {currentPage === 'log-viewer' && <LogManagerPage/>}
+            </AppShell>
+          </AppBackdrop>
+        )}
+
         <ModalContainer/>
       </>
     )

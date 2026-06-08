@@ -3,6 +3,21 @@ import {type ModConfig, ModService} from "../../service/ModService";
 import {type FusamAddon} from "../../service/RegistryDataService";
 import i18n, {currentLanguage} from "../../i18n/i18n.ts";
 import CustomExtensionModal from "../../component/CustomExtensionModal";
+import Alert from "../../component/ui/Alert";
+import Badge, {type BadgeVariant} from "../../component/ui/Badge";
+import Button from "../../component/ui/Button";
+import EmptyState from "../../component/ui/EmptyState";
+import Icon from "../../component/ui/Icon";
+import Input from "../../component/ui/Input";
+import List from "../../component/ui/List";
+import ListRow from "../../component/ui/ListRow";
+import Page from "../../component/ui/Page";
+import PageHeader from "../../component/ui/PageHeader";
+import Select from "../../component/ui/Select";
+import StatCard from "../../component/ui/StatCard";
+import StatsGrid from "../../component/ui/StatsGrid";
+import Toolbar from "../../component/ui/Toolbar";
+import ToolbarPrimary from "../../component/ui/ToolbarPrimary";
 
 interface ModManagerState {
   availableMods: Array<{
@@ -167,81 +182,65 @@ export default class ModManagerPage extends Component<{}, ModManagerState> {
     const totalCount = this.state.availableMods.length;
 
     return (
-      <div className="p-6 max-w-6xl mx-auto">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-3xl font-bold text-blue-600">{i18n('title-mod-manager')}</h1>
-          <button
+      <Page size="wide">
+        <PageHeader
+          title={i18n('title-mod-manager')}
+          actions={<Button
             onClick={this.handleOpenCustomExtensionModal}
-            className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition-colors font-medium"
+            variant="neutral"
           >
             + {i18n('button-manage-custom-extensions')}
-          </button>
-        </div>
+          </Button>}
+        />
 
         {/* Error Message */}
         {error && (
-          <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+          <Alert>
             {error}
-          </div>
+          </Alert>
         )}
 
         {/* Stats Bar */}
-        <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg flex items-center justify-between">
-          <div className="flex gap-6">
-            <div>
-              <span className="text-sm text-gray-600">{i18n('label-total-mods')}:</span>
-              <span className="ml-2 text-lg font-bold text-blue-700">{totalCount}</span>
-            </div>
-            <div>
-              <span className="text-sm text-gray-600">{i18n('label-enabled-mods')}:</span>
-              <span className="ml-2 text-lg font-bold text-green-600">{enabledCount}</span>
-            </div>
-            <div>
-              <span className="text-sm text-gray-600">{i18n('label-disabled-mods')}:</span>
-              <span className="ml-2 text-lg font-bold text-gray-600">{totalCount - enabledCount}</span>
-            </div>
-          </div>
-        </div>
+        <StatsGrid>
+          <StatCard label={i18n('label-total-mods')} value={totalCount} variant="primary"/>
+          <StatCard label={i18n('label-enabled-mods')} value={enabledCount} variant="success"/>
+          <StatCard label={i18n('label-disabled-mods')} value={totalCount - enabledCount}/>
+        </StatsGrid>
 
         {/* Filters and Search */}
-        <div className="mb-6 p-4 bg-white border border-blue-200 rounded-lg">
-          <div className="flex gap-4">
-            <div className="flex-1">
-              <input
-                type="text"
-                placeholder={i18n('placeholder-search-mods')}
-                value={this.state.searchQuery}
-                onInput={this.handleSearchChange}
-                className="w-full px-4 py-2 border border-blue-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
-              />
-            </div>
-            <select
-              value={this.state.filter}
-              onChange={this.handleFilterChange}
-              className="px-4 py-2 border border-blue-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white"
-            >
-              <option value="all">{i18n('filter-all-mods')}</option>
-              <option value="enabled">{i18n('filter-enabled-only')}</option>
-              <option value="disabled">{i18n('filter-disabled-only')}</option>
-            </select>
-          </div>
-        </div>
+        <Toolbar>
+          <ToolbarPrimary>
+            <Input
+              type="text"
+              placeholder={i18n('placeholder-search-mods')}
+              value={this.state.searchQuery}
+              onInput={this.handleSearchChange}
+            />
+          </ToolbarPrimary>
+          <Select
+            value={this.state.filter}
+            onChange={this.handleFilterChange}
+            className="w-auto min-w-40"
+          >
+            <option value="all">{i18n('filter-all-mods')}</option>
+            <option value="enabled">{i18n('filter-enabled-only')}</option>
+            <option value="disabled">{i18n('filter-disabled-only')}</option>
+          </Select>
+        </Toolbar>
 
         {/* Mod List */}
-        <div className="bg-white border border-blue-200 rounded-lg overflow-hidden">
+        <List>
           {filteredMods.length === 0 ? (
-            <div className="p-8 text-center text-gray-500">
-              {totalCount === 0 ? (
-                <>
-                  <p className="mb-2">{i18n('no-mods-available')}</p>
-                  <p className="text-sm">{i18n('no-mods-available-detail')}</p>
-                </>
-              ) : (
-                <p>{i18n('no-mods-match-search')}</p>
-              )}
-            </div>
+            totalCount === 0 ? (
+              <EmptyState
+                title={i18n('no-mods-available')}
+                description={i18n('no-mods-available-detail')}
+              />
+            ) : (
+              <EmptyState title={i18n('no-mods-match-search')}/>
+            )
           ) : (
-            <div className="divide-y divide-blue-100">
+            <div>
               {filteredMods.map((mod) => {
                 const isEnabled = mod.config?.enabled || false;
                 const uniqueId = `${mod.addon.id}_${mod.registryId}`;
@@ -257,7 +256,7 @@ export default class ModManagerPage extends Component<{}, ModManagerState> {
                 const isExpanded = expandedModId === uniqueId;
 
                 return (
-                  <div key={uniqueId} className="p-4 hover:bg-blue-50 transition-colors">
+                  <ListRow key={uniqueId}>
                     {/* Mod Header */}
                     <div className="flex items-start gap-4">
                       {/* Icon */}
@@ -265,7 +264,7 @@ export default class ModManagerPage extends Component<{}, ModManagerState> {
                         <img
                           src={mod.addon.icon}
                           alt={modName}
-                          className="w-12 h-12 rounded object-cover flex-shrink-0"
+                          className="h-12 w-12 flex-none rounded-lg border border-slate-200 bg-slate-50 object-cover"
                           onError={(e) => {
                             (e.target as HTMLImageElement).style.display = 'none';
                           }}
@@ -275,31 +274,28 @@ export default class ModManagerPage extends Component<{}, ModManagerState> {
                       {/* Main Content */}
                       <div className="flex-1 min-w-0">
                         {/* Title Row */}
-                        <div className="flex items-center gap-2 mb-1">
-                          <h3 className="text-lg font-semibold text-blue-700">{modName}</h3>
+                        <div className="flex items-center gap-2 mb-1 flex-wrap">
+                          <h3 className="text-[0.96875rem] font-bold leading-snug text-slate-900">{modName}</h3>
                           {mod.addon.tags && mod.addon.tags.length > 0 && (
                             <div className="flex gap-1 flex-wrap">
                               {mod.addon.tags.slice(0, 3).map(tag => (
-                                <span
-                                  key={tag}
-                                  className="px-2 py-0.5 text-xs bg-gray-200 text-gray-700 rounded"
-                                >
+                                <Badge key={tag}>
                                   {tag}
-                                </span>
+                                </Badge>
                               ))}
                             </div>
                           )}
                         </div>
 
                         {/* Author and ID */}
-                        <div className="text-sm text-gray-600 mb-2">
+                        <div className="mb-2 text-[0.8125rem] text-slate-500">
                           <span className="font-medium">by {mod.addon.author}</span>
                           <span className="mx-2">•</span>
-                          <span className="text-gray-500">ID: {mod.addon.id}</span>
+                          <span>ID: {mod.addon.id}</span>
                         </div>
 
                         {/* Description */}
-                        <p className="text-sm text-gray-700 mb-3 line-clamp-2">
+                        <p className="mb-3 line-clamp-2 text-sm leading-relaxed text-slate-700">
                           {mod.addon.description}
                         </p>
 
@@ -307,16 +303,16 @@ export default class ModManagerPage extends Component<{}, ModManagerState> {
                         <div className="flex items-center gap-4 flex-wrap">
                           {/* Status Badge */}
                           {isEnabled && (
-                            <span className="px-3 py-1 text-sm font-medium bg-green-100 text-green-700 rounded">
-                              ✓ {i18n('label-installed')}
-                            </span>
+                            <Badge variant="success">
+                              {i18n('label-installed')}
+                            </Badge>
                           )}
 
                           {/* Version Selector - Always show if versions available */}
                           {mod.addon.versions.length > 0 && (
                             <div className="flex items-center gap-2">
-                              <span className="text-sm text-gray-600">{i18n('label-selected-version')}:</span>
-                              <select
+                              <span className="text-[0.8125rem] text-slate-500">{i18n('label-selected-version')}:</span>
+                              <Select
                                 value={selectedVersion}
                                 onChange={(e) => this.handleVersionChange(
                                   mod.addon.id,
@@ -324,59 +320,63 @@ export default class ModManagerPage extends Component<{}, ModManagerState> {
                                   (e.target as HTMLSelectElement).value,
                                   isEnabled
                                 )}
-                                className="px-3 py-1 text-sm border border-blue-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white"
+                                compact
                               >
                                 {mod.addon.versions.map(v => (
                                   <option key={v.distribution} value={v.distribution}>
                                     {v.distribution}
                                   </option>
                                 ))}
-                              </select>
+                              </Select>
                             </div>
                           )}
 
                           {/* Expand/Collapse Button */}
-                          <button
+                          <Button
                             onClick={() => this.toggleExpanded(uniqueId)}
-                            className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                            variant="ghost"
+                            size="sm"
+                            icon={<Icon name="chevron" open={isExpanded}/>}
                           >
-                            {isExpanded ? ('▼ ' + i18n('button-less')) : ('▶ ' + i18n('button-more'))}
-                          </button>
+                            {isExpanded ? i18n('button-less') : i18n('button-more')}
+                          </Button>
 
                           {/* Install/Remove Button */}
                           <div className="ml-auto">
                             {isEnabled ? (
-                              <button
+                              <Button
                                 onClick={() => this.handleRemoveMod(mod.addon.id, mod.registryId)}
-                                className="px-4 py-1.5 text-sm bg-red-500 text-white rounded hover:bg-red-600 transition-colors font-medium"
+                                variant="danger"
+                                size="sm"
                                 title="Remove this mod"
                               >
                                 {i18n('button-remove-mod')}
-                              </button>
+                              </Button>
                             ) : (
-                              <button
+                              <Button
                                 onClick={() => this.handleInstallMod(mod.addon.id, mod.registryId)}
-                                className="px-4 py-1.5 text-sm bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors font-medium"
+                                variant="primary"
+                                size="sm"
                                 title="Install this mod"
                               >
                                 {i18n('button-install-mod')}
-                              </button>
+                              </Button>
                             )}
                           </div>
                         </div>
 
                         {/* Expanded Details */}
                         {isExpanded && (
-                          <div className="mt-4 p-4 bg-gray-50 rounded border border-gray-200">
+                          <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-3.5">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                               {mod.addon.repository && (
                                 <div>
-                                  <span className="font-semibold text-gray-700">{i18n('label-repository')}:</span>
+                                  <span className="font-bold text-slate-800">{i18n('label-repository')}:</span>
                                   <a
                                     href={mod.addon.repository}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="ml-2 text-blue-600 hover:underline break-all"
+                                    className="ml-2 break-all font-semibold text-blue-700 no-underline hover:text-blue-900 hover:underline"
                                   >
                                     {mod.addon.repository}
                                   </a>
@@ -384,12 +384,12 @@ export default class ModManagerPage extends Component<{}, ModManagerState> {
                               )}
                               {mod.addon.website && (
                                 <div>
-                                  <span className="font-semibold text-gray-700">{i18n('label-website')}:</span>
+                                  <span className="font-bold text-slate-800">{i18n('label-website')}:</span>
                                   <a
                                     href={mod.addon.website}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="ml-2 text-blue-600 hover:underline break-all"
+                                    className="ml-2 break-all font-semibold text-blue-700 no-underline hover:text-blue-900 hover:underline"
                                   >
                                     {mod.addon.website}
                                   </a>
@@ -397,12 +397,12 @@ export default class ModManagerPage extends Component<{}, ModManagerState> {
                               )}
                               {mod.addon.discord && (
                                 <div>
-                                  <span className="font-semibold text-gray-700">{i18n('label-discord')}:</span>
+                                  <span className="font-bold text-slate-800">{i18n('label-discord')}:</span>
                                   <a
                                     href={mod.addon.discord}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="ml-2 text-blue-600 hover:underline"
+                                    className="ml-2 font-semibold text-blue-700 no-underline hover:text-blue-900 hover:underline"
                                   >
                                     {i18n('button-join-discord')}
                                   </a>
@@ -410,30 +410,26 @@ export default class ModManagerPage extends Component<{}, ModManagerState> {
                               )}
                               {mod.addon.type && (
                                 <div>
-                                  <span className="font-semibold text-gray-700">{i18n('label-type')}:</span>
-                                  <span className="ml-2 text-gray-600">{mod.addon.type}</span>
+                                  <span className="font-bold text-slate-800">{i18n('label-type')}:</span>
+                                  <span className="ml-2 text-[0.8125rem] text-slate-500">{mod.addon.type}</span>
                                 </div>
                               )}
                               <div>
-                                <span className="font-semibold text-gray-700">{i18n('label-registry')}:</span>
-                                <span className="ml-2 text-gray-600 text-xs break-all">{mod.registryUrl}</span>
+                                <span className="font-bold text-slate-800">{i18n('label-registry')}:</span>
+                                <span className="ml-2 break-all text-[0.8125rem] text-slate-500">{mod.registryUrl}</span>
                               </div>
                               {mod.addon.versions.length > 0 && (
                                 <div className="md:col-span-2">
                                   <span
-                                    className="font-semibold text-gray-700">{i18n('label-available-versions')}:</span>
+                                    className="font-bold text-slate-800">{i18n('label-available-versions')}:</span>
                                   <div className="mt-1 flex gap-2 flex-wrap">
                                     {mod.addon.versions.map(v => (
-                                      <span
+                                      <Badge
                                         key={v.distribution}
-                                        className={`px-2 py-1 text-xs rounded ${
-                                          v.distribution === selectedVersion
-                                            ? 'bg-blue-600 text-white'
-                                            : 'bg-gray-200 text-gray-700'
-                                        }`}
+                                        variant={(v.distribution === selectedVersion ? 'primary' : 'neutral') as BadgeVariant}
                                       >
                                         {v.distribution}
-                                      </span>
+                                      </Badge>
                                     ))}
                                   </div>
                                 </div>
@@ -443,16 +439,16 @@ export default class ModManagerPage extends Component<{}, ModManagerState> {
                         )}
                       </div>
                     </div>
-                  </div>
+                  </ListRow>
                 );
               })}
             </div>
           )}
-        </div>
+        </List>
 
         {/* Footer Info */}
         {filteredMods.length > 0 && (
-          <div className="mt-4 text-sm text-gray-600 text-center">
+          <div className="mt-3.5 text-center text-[0.8125rem] text-slate-500">
             {i18n('showing-x-of-y-mods', {x: filteredMods.length, y: totalCount})}
           </div>
         )}
@@ -464,7 +460,7 @@ export default class ModManagerPage extends Component<{}, ModManagerState> {
             onExtensionAdded={this.handleCustomExtensionChanged}
           />
         )}
-      </div>
+      </Page>
     );
   }
 }

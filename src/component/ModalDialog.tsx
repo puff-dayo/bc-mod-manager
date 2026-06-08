@@ -1,6 +1,11 @@
 import type {ModalState} from "../service/ModalService.ts";
 import {Component} from "preact";
-import i18n from "../i18n/i18n.ts";
+import Button from "./ui/Button";
+import CloseButton from "./ui/CloseButton";
+import DialogPanel from "./ui/DialogPanel";
+import Input from "./ui/Input";
+import ModalBackdrop from "./ui/ModalBackdrop";
+import Textarea from "./ui/Textarea";
 
 interface ModalDialogProps {
   modal: ModalState;
@@ -51,20 +56,18 @@ export default class ModalDialog extends Component<ModalDialogProps, ModalDialog
     const otherButtons = Object.entries(buttons).filter(([key]) => key !== "submit");
 
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 z-[60] flex items-center justify-center p-4">
-        <div className="bg-white rounded-lg shadow-2xl max-w-md w-full p-6">
-          <button
+      <ModalBackdrop className="z-[60]">
+        <DialogPanel>
+          <CloseButton
             onClick={() => this.handleAction("close")}
-            className="sticky top-4 float-right -mr-4 -mt-4 w-10 h-10 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors z-50 flex items-center justify-center text-2xl font-bold"
-            title={i18n('button-close')}
-          >
-            ×
-          </button>
+            className="self-end -mt-1 -mr-1"
+            variant="dialog"
+          />
 
           {/* Prompt */}
-          <div className="mb-4 text-gray-800">
+          <div className="mb-4 text-slate-800">
             {typeof modal.prompt === "string" ? (
-              <p className="text-lg">{modal.prompt}</p>
+              <p className="text-base font-semibold leading-6">{modal.prompt}</p>
             ) : (
               modal.prompt
             )}
@@ -74,17 +77,15 @@ export default class ModalDialog extends Component<ModalDialogProps, ModalDialog
           {modal.input && (
             <div className="mb-4">
               {modal.input.type === "textarea" ? (
-                <textarea
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                <Textarea
                   value={inputValue}
                   onInput={this.handleInputChange}
                   readOnly={modal.input.readonly}
                   rows={4}
                 />
               ) : (
-                <input
+                <Input
                   type="text"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   value={inputValue}
                   onInput={this.handleInputChange}
                   readOnly={modal.input.readonly}
@@ -97,25 +98,25 @@ export default class ModalDialog extends Component<ModalDialogProps, ModalDialog
           <div className="flex gap-2 justify-end">
             {/* Other buttons (like cancel) */}
             {otherButtons.map(([action, label]) => (
-              <button
+              <Button
                 key={action}
                 onClick={() => this.handleAction(action)}
-                className="px-4 py-2 bg-gray-300 text-gray-800 rounded-md hover:bg-gray-400 transition-colors"
+                variant="neutral"
               >
                 {label}
-              </button>
+              </Button>
             ))}
 
             {/* Submit button */}
-            <button
+            <Button
               onClick={() => this.handleAction("submit")}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+              variant="primary"
             >
               {submitLabel}
-            </button>
+            </Button>
           </div>
-        </div>
-      </div>
+        </DialogPanel>
+      </ModalBackdrop>
     );
   }
 }

@@ -1,6 +1,19 @@
 import {Component} from "preact";
 import {type LogEntry, type LogLevel, LogService} from "../../service/LogService";
 import i18n from "../../i18n/i18n";
+import Badge, {type BadgeVariant} from "../../component/ui/Badge";
+import Button from "../../component/ui/Button";
+import EmptyState from "../../component/ui/EmptyState";
+import Icon from "../../component/ui/Icon";
+import Input from "../../component/ui/Input";
+import ListRow from "../../component/ui/ListRow";
+import Page from "../../component/ui/Page";
+import PageHeader from "../../component/ui/PageHeader";
+import Panel from "../../component/ui/Panel";
+import Select from "../../component/ui/Select";
+import StatCard from "../../component/ui/StatCard";
+import StatsGrid from "../../component/ui/StatsGrid";
+import Toolbar from "../../component/ui/Toolbar";
 
 interface LogManagerState {
   logs: LogEntry[];
@@ -121,18 +134,18 @@ export default class LogManagerPage extends Component<{}, LogManagerState> {
     return date.toLocaleString();
   };
 
-  getLevelColor = (level: LogLevel): string => {
+  getLevelVariant = (level: LogLevel): BadgeVariant => {
     switch (level) {
       case 'DEBUG':
-        return 'bg-gray-100 text-gray-700';
+        return 'neutral';
       case 'INFO':
-        return 'bg-blue-100 text-blue-700';
+        return 'primary';
       case 'WARN':
-        return 'bg-yellow-100 text-yellow-700';
+        return 'warning';
       case 'ERROR':
-        return 'bg-red-100 text-red-700';
+        return 'danger';
       default:
-        return 'bg-gray-100 text-gray-700';
+        return 'neutral';
     }
   };
 
@@ -142,64 +155,50 @@ export default class LogManagerPage extends Component<{}, LogManagerState> {
     const stats = LogService.getLogStats();
 
     return (
-      <div className="p-6 max-w-7xl mx-auto">
+      <Page size="xl">
         {/* Header */}
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-blue-600 mb-2">{i18n('title-log-manager')}</h1>
-          <p className="text-gray-600">{i18n('subtitle-log-manager')}</p>
-        </div>
+        <PageHeader
+          title={i18n('title-log-manager')}
+          subtitle={i18n('subtitle-log-manager')}
+        />
 
         {/* Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
-          <div className="bg-white p-4 rounded-lg shadow border border-blue-100">
-            <div className="text-2xl font-bold text-blue-600">{this.state.logs.length}</div>
-            <div className="text-sm text-gray-600">{i18n('label-total-logs')}</div>
-          </div>
-          <div className="bg-gray-50 p-4 rounded-lg shadow border border-gray-200">
-            <div className="text-2xl font-bold text-gray-700">{stats['DEBUG']}</div>
-            <div className="text-sm text-gray-600">{i18n('label-debug')}</div>
-          </div>
-          <div className="bg-blue-50 p-4 rounded-lg shadow border border-blue-200">
-            <div className="text-2xl font-bold text-blue-700">{stats['INFO']}</div>
-            <div className="text-sm text-gray-600">{i18n('label-info')}</div>
-          </div>
-          <div className="bg-yellow-50 p-4 rounded-lg shadow border border-yellow-200">
-            <div className="text-2xl font-bold text-yellow-700">{stats['WARN']}</div>
-            <div className="text-sm text-gray-600">{i18n('label-warnings')}</div>
-          </div>
-          <div className="bg-red-50 p-4 rounded-lg shadow border border-red-200">
-            <div className="text-2xl font-bold text-red-700">{stats['ERROR']}</div>
-            <div className="text-sm text-gray-600">{i18n('label-errors')}</div>
-          </div>
-        </div>
+        <StatsGrid>
+          <StatCard label={i18n('label-total-logs')} value={this.state.logs.length} variant="primary"/>
+          <StatCard label={i18n('label-debug')} value={stats['DEBUG']}/>
+          <StatCard label={i18n('label-info')} value={stats['INFO']} variant="primary"/>
+          <StatCard label={i18n('label-warnings')} value={stats['WARN']} variant="warning"/>
+          <StatCard label={i18n('label-errors')} value={stats['ERROR']} variant="danger"/>
+        </StatsGrid>
 
         {/* Controls */}
-        <div className="bg-white p-4 rounded-lg shadow mb-6 border border-blue-100">
+        <Toolbar>
           <div className="flex flex-wrap gap-4 items-center">
             {/* Filter */}
             <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-gray-700">{i18n('label-filter')}:</span>
-              <select
+              <span className="text-[0.8125rem] font-semibold text-slate-500">{i18n('label-filter')}:</span>
+              <Select
                 value={filter}
                 onChange={(e) => this.handleFilterChange((e.target as HTMLSelectElement).value as LogLevel | 'all')}
-                className="px-3 py-1.5 text-sm border border-blue-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white"
+                compact
               >
                 <option value="all">{i18n('filter-all-levels')}</option>
                 <option value={'DEBUG'}>{i18n('filter-debug')}</option>
                 <option value={'INFO'}>{i18n('filter-info')}</option>
                 <option value={'WARN'}>{i18n('filter-warnings')}</option>
                 <option value={'ERROR'}>{i18n('filter-errors')}</option>
-              </select>
+              </Select>
             </div>
 
             {/* Search */}
             <div className="flex-1 min-w-[200px]">
-              <input
+              <Input
                 type="text"
                 placeholder={i18n('placeholder-search-logs')}
                 value={searchQuery}
                 onInput={this.handleSearchChange}
-                className="w-full px-3 py-1.5 text-sm border border-blue-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                compact
+                className="w-full"
               />
             </div>
 
@@ -209,100 +208,106 @@ export default class LogManagerPage extends Component<{}, LogManagerState> {
                 type="checkbox"
                 checked={autoRefresh}
                 onChange={this.handleAutoRefreshToggle}
-                className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                className="w-4 h-4 accent-blue-600"
               />
-              <span className="text-sm font-medium text-gray-700">{i18n('label-auto-refresh')}</span>
+              <span className="text-[0.8125rem] font-semibold text-slate-500">{i18n('label-auto-refresh')}</span>
             </label>
 
             {/* Buttons */}
-            <button
+            <Button
               onClick={this.handleRefresh}
-              className="px-4 py-1.5 text-sm bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors font-medium"
+              variant="primary"
+              size="sm"
+              icon={<Icon name="refresh"/>}
             >
-              ↻ {i18n('button-refresh')}
-            </button>
+              {i18n('button-refresh')}
+            </Button>
 
-            <button
+            <Button
               onClick={this.handleDownloadCrashReport}
               disabled={isDownloading}
-              className="px-4 py-1.5 text-sm bg-green-500 text-white rounded hover:bg-green-600 transition-colors font-medium disabled:bg-gray-400 disabled:cursor-not-allowed"
+              variant="neutral"
+              size="sm"
             >
-              {isDownloading ? `⟳ ${i18n('button-downloading')}` : `📦 ${i18n('button-download-crash-report')}`}
-            </button>
+              {isDownloading ? (
+                <>
+                  <Icon name="download" spin/>
+                  {i18n('button-downloading')}
+                </>
+              ) : (
+                <>
+                  <Icon name="download"/>
+                  {i18n('button-download-crash-report')}
+                </>
+              )}
+            </Button>
 
-            <button
+            <Button
               onClick={this.handleClearLogs}
-              className="px-4 py-1.5 text-sm bg-red-500 text-white rounded hover:bg-red-600 transition-colors font-medium"
+              variant="danger"
+              size="sm"
+              icon={<Icon name="delete"/>}
             >
-              🗑 {i18n('button-clear-logs')}
-            </button>
+              {i18n('button-clear-logs')}
+            </Button>
           </div>
 
           {/* Debug Methods Info */}
           {debugMethods.length > 0 && (
-            <div className="mt-4 pt-4 border-t border-blue-100">
-              <div className="text-sm text-gray-600">
+            <div className="mt-4 pt-4 border-t border-slate-200">
+              <div className="text-[0.8125rem] text-slate-500">
                 <span
                   className="font-medium">{i18n('label-registered-debug-methods', {count: debugMethods.length.toString()})}:</span>
                 <span className="ml-2">{debugMethods.join(', ')}</span>
               </div>
             </div>
           )}
-        </div>
+        </Toolbar>
 
         {/* Logs List */}
-        <div className="bg-white rounded-lg shadow border border-blue-100">
-          <div className="p-4 border-b border-blue-100">
-            <h2 className="text-lg font-semibold text-gray-800">
-              {i18n('label-logs-count', {count: filteredLogs.length.toString()})}
-            </h2>
-          </div>
-
-          <div className="divide-y divide-blue-50 max-h-[600px] overflow-y-auto">
+        <Panel list title={i18n('label-logs-count', {count: filteredLogs.length.toString()})}>
+          <div className="max-h-[600px] overflow-y-auto">
             {filteredLogs.length === 0 ? (
-              <div className="p-8 text-center text-gray-500">
-                <div className="text-4xl mb-2">📝</div>
-                <div className="text-lg font-medium">{i18n('message-no-logs-found')}</div>
-                <div className="text-sm">
-                  {searchQuery || filter !== 'all'
-                    ? i18n('message-adjust-filters')
-                    : i18n('message-logs-will-appear')}
-                </div>
-              </div>
+              <EmptyState
+                title={i18n('message-no-logs-found')}
+                description={searchQuery || filter !== 'all'
+                  ? i18n('message-adjust-filters')
+                  : i18n('message-logs-will-appear')}
+              />
             ) : (
               [...filteredLogs].reverse().map((log) => (
-                <div key={log.id} className="p-4 hover:bg-blue-50 transition-colors">
+                <ListRow key={log.id}>
                   <div className="flex items-start gap-3">
                     {/* Level Badge */}
-                    <span className={`px-2 py-1 text-xs font-medium rounded ${this.getLevelColor(log.level)}`}>
+                    <Badge variant={this.getLevelVariant(log.level)}>
                       {log.level}
-                    </span>
+                    </Badge>
 
                     {/* Content */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-2">
-                        <div className="text-sm text-gray-800 break-words flex-1">
+                        <div className="flex-1 break-words text-sm leading-relaxed text-slate-700">
                           {log.message}
                         </div>
-                        <div className="text-xs text-gray-500 whitespace-nowrap">
+                        <div className="whitespace-nowrap text-[0.8125rem] text-slate-500">
                           {this.formatTimestamp(log.timestamp)}
                         </div>
                       </div>
 
                       {/* Additional Data */}
                       {log.data && (
-                        <div className="mt-2 p-2 bg-gray-50 rounded text-xs font-mono text-gray-700 overflow-x-auto">
-                          <pre>{JSON.stringify(log.data, null, 2)}</pre>
+                        <div className="mt-2.5 overflow-x-auto rounded-lg border border-slate-700 bg-slate-900 p-3 font-mono text-xs text-slate-300">
+                          <pre className="m-0">{JSON.stringify(log.data, null, 2)}</pre>
                         </div>
                       )}
                     </div>
                   </div>
-                </div>
+                </ListRow>
               ))
             )}
           </div>
-        </div>
-      </div>
+        </Panel>
+      </Page>
     );
   }
 }
