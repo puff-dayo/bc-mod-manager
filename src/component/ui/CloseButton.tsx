@@ -9,7 +9,13 @@ interface CloseButtonProps extends Omit<JSX.ButtonHTMLAttributes<HTMLButtonEleme
   variant?: CloseButtonVariant;
 }
 
-export default function CloseButton({className, title, type = 'button', variant = 'modal', ...props}: CloseButtonProps) {
+export default function CloseButton({
+                                      className,
+                                      title,
+                                      type = 'button',
+                                      variant = 'modal',
+                                      ...props
+                                    }: CloseButtonProps) {
   const variantClass = variant === 'app' ? 'absolute right-4 top-4 z-[3]' : '';
 
   return (

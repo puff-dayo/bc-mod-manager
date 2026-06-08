@@ -296,7 +296,8 @@ export default class LogManagerPage extends Component<{}, LogManagerState> {
 
                       {/* Additional Data */}
                       {log.data && (
-                        <div className="mt-2.5 overflow-x-auto rounded-lg border border-slate-700 bg-slate-900 p-3 font-mono text-xs text-slate-300">
+                        <div
+                          className="mt-2.5 overflow-x-auto rounded-lg border border-slate-700 bg-slate-900 p-3 font-mono text-xs text-slate-300">
                           <pre className="m-0">{JSON.stringify(log.data, null, 2)}</pre>
                         </div>
                       )}

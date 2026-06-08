@@ -345,7 +345,8 @@ export default class RegistryManagerPage extends Component<{}, RegistryManagerSt
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <div className="break-all text-[0.96875rem] font-bold leading-snug text-slate-900">{registry.url}</div>
+                          <div
+                            className="break-all text-[0.96875rem] font-bold leading-snug text-slate-900">{registry.url}</div>
                           <Badge variant={registry.type === 'fusam' ? 'primary' : 'neutral'}>
                             {registry.type}
                           </Badge>

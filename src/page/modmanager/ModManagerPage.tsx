@@ -164,7 +164,7 @@ export default class ModManagerPage extends Component<{}, ModManagerState> {
       filtered = filtered.filter(m =>
         (typeof m.addon.name == 'string'
           ? m.addon.name.toLowerCase().includes(query)
-          : m.addon.name['en']?.includes(query) ) ||
+          : m.addon.name['en']?.includes(query)) ||
         m.addon.description.toLowerCase().includes(query) ||
         m.addon.author.toLowerCase().includes(query) ||
         m.addon.id.toLowerCase().includes(query) ||
@@ -416,7 +416,8 @@ export default class ModManagerPage extends Component<{}, ModManagerState> {
                               )}
                               <div>
                                 <span className="font-bold text-slate-800">{i18n('label-registry')}:</span>
-                                <span className="ml-2 break-all text-[0.8125rem] text-slate-500">{mod.registryUrl}</span>
+                                <span
+                                  className="ml-2 break-all text-[0.8125rem] text-slate-500">{mod.registryUrl}</span>
                               </div>
                               {mod.addon.versions.length > 0 && (
                                 <div className="md:col-span-2">

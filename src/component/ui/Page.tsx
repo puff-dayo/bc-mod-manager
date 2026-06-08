@@ -17,7 +17,8 @@ export default function Page({children, className, size = 'wide', ...props}: Pag
   }[size];
 
   return (
-    <div {...props} className={classNames('mx-auto min-h-0 w-full overflow-auto p-4 sm:p-[1.375rem]', sizeClass, className)}>
+    <div {...props}
+         className={classNames('mx-auto min-h-0 w-full overflow-auto p-4 sm:p-[1.375rem]', sizeClass, className)}>
       {children}
     </div>
   );

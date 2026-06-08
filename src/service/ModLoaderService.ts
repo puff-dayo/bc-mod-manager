@@ -60,15 +60,6 @@ export class ModLoaderService {
     }
   }
 
-  private static preloadAllEnabledModsImpl(): void {
-    const modsWithDetails = ModService.getAllModsWithDetails();
-    const enabledMods = modsWithDetails.filter(mod => mod.enabled && mod.type == 'module');
-    enabledMods.forEach(mod => {
-      this.preloadMod(mod.modId, mod.type, mod.registryId, mod.sourceUrl, mod.name, mod.selectedVersion);
-    });
-    LogService.info(`ModLoaderService: Preloaded ${enabledMods.length} enabled mods`);
-  }
-
   /**
    * Load a single mod by injecting its script into the page
    */
@@ -291,6 +282,15 @@ export class ModLoaderService {
     this.loadedMods.clear();
 
     LogService.info('ModLoaderService: All mod scripts removed');
+  }
+
+  private static preloadAllEnabledModsImpl(): void {
+    const modsWithDetails = ModService.getAllModsWithDetails();
+    const enabledMods = modsWithDetails.filter(mod => mod.enabled && mod.type == 'module');
+    enabledMods.forEach(mod => {
+      this.preloadMod(mod.modId, mod.type, mod.registryId, mod.sourceUrl, mod.name, mod.selectedVersion);
+    });
+    LogService.info(`ModLoaderService: Preloaded ${enabledMods.length} enabled mods`);
   }
 
   private static loadAllEnabledModsImpl(): void {

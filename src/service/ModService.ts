@@ -176,7 +176,7 @@ export class ModService {
           modsWithDetails.push({
             ...config,
             name: addon.name,
-            nameLanguage: { en: addon.name },
+            nameLanguage: {en: addon.name},
             description: addon.description,
             author: addon.author,
             repository: addon.repository,
@@ -208,7 +208,7 @@ export class ModService {
           modsWithDetails.push({
             ...config,
             name: typeof addon.name === 'string' ? addon.name : addon.name['en'],
-            nameLanguage: typeof addon.name === 'object' ? addon.name : { en: addon.name },
+            nameLanguage: typeof addon.name === 'object' ? addon.name : {en: addon.name},
             description: addon.description,
             author: addon.author,
             repository: addon.repository,

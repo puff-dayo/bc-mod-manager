@@ -13,14 +13,14 @@ interface ButtonProps extends Omit<JSX.ButtonHTMLAttributes<HTMLButtonElement>, 
 }
 
 export default function Button({
-  children,
-  className,
-  icon,
-  size = 'md',
-  type = 'button',
-  variant = 'neutral',
-  ...props
-}: ButtonProps) {
+                                 children,
+                                 className,
+                                 icon,
+                                 size = 'md',
+                                 type = 'button',
+                                 variant = 'neutral',
+                                 ...props
+                               }: ButtonProps) {
   const variantClass = {
     primary: 'border-blue-600 bg-blue-600 text-white hover:bg-blue-800',
     neutral: 'border-slate-300 bg-white text-slate-800 hover:bg-slate-50',

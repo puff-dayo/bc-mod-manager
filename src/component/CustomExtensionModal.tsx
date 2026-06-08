@@ -219,193 +219,193 @@ export default class CustomExtensionModal extends Component<CustomExtensionModal
             {i18n('button-close')}
           </Button>}
         >
-            {/* Messages */}
-            {error && (
-              <Alert>
-                {error}
-              </Alert>
-            )}
-            {success && (
-              <Alert variant="success">
-                {success}
-              </Alert>
-            )}
+          {/* Messages */}
+          {error && (
+            <Alert>
+              {error}
+            </Alert>
+          )}
+          {success && (
+            <Alert variant="success">
+              {success}
+            </Alert>
+          )}
 
-            {/* Add/Edit Form */}
-            {showAddForm ? (
-              <FormPanel
-                className="mb-6"
-                title={editingId ? i18n('button-edit') : i18n('title-add-custom-extension')}
+          {/* Add/Edit Form */}
+          {showAddForm ? (
+            <FormPanel
+              className="mb-6"
+              title={editingId ? i18n('button-edit') : i18n('title-add-custom-extension')}
+            >
+              <FormGrid>
+                <Field label={`${i18n('label-extension-name')} *`}>
+                  <Input
+                    type="text"
+                    value={formData.name}
+                    onInput={(e) => this.handleInputChange('name', (e.target as HTMLInputElement).value)}
+                    placeholder={i18n('placeholder-extension-name')}
+                  />
+                </Field>
+
+                <Field label={i18n('label-extension-author')}>
+                  <Input
+                    type="text"
+                    value={formData.author}
+                    onInput={(e) => this.handleInputChange('author', (e.target as HTMLInputElement).value)}
+                    placeholder={i18n('placeholder-extension-author')}
+                  />
+                </Field>
+
+                <Field label={i18n('label-extension-description')} full>
+                  <Textarea
+                    value={formData.description}
+                    onInput={(e) => this.handleInputChange('description', (e.target as HTMLTextAreaElement).value)}
+                    placeholder={i18n('placeholder-extension-description')}
+                    rows={3}
+                  />
+                </Field>
+
+                <Field label={`${i18n('label-extension-source-url')} *`} full>
+                  <Input
+                    type="text"
+                    value={formData.sourceUrl}
+                    onInput={(e) => this.handleInputChange('sourceUrl', (e.target as HTMLInputElement).value)}
+                    placeholder={i18n('placeholder-extension-source-url')}
+                  />
+                </Field>
+
+                <Field label={i18n('label-extension-type')}>
+                  <Select
+                    value={formData.type}
+                    onChange={(e) => this.handleInputChange('type', (e.target as HTMLSelectElement).value)}
+                  >
+                    <option value="script">{i18n('option-type-script')}</option>
+                    <option value="module">{i18n('option-type-module')}</option>
+                  </Select>
+                </Field>
+
+                <Field label={i18n('label-extension-icon-url')}>
+                  <Input
+                    type="text"
+                    value={formData.icon}
+                    onInput={(e) => this.handleInputChange('icon', (e.target as HTMLInputElement).value)}
+                    placeholder={i18n('placeholder-extension-icon-url')}
+                  />
+                </Field>
+
+                <Field label={i18n('label-extension-repository-url')}>
+                  <Input
+                    type="text"
+                    value={formData.repository}
+                    onInput={(e) => this.handleInputChange('repository', (e.target as HTMLInputElement).value)}
+                    placeholder={i18n('placeholder-extension-repository-url')}
+                  />
+                </Field>
+
+                <Field label={i18n('label-extension-website-url')}>
+                  <Input
+                    type="text"
+                    value={formData.website}
+                    onInput={(e) => this.handleInputChange('website', (e.target as HTMLInputElement).value)}
+                    placeholder={i18n('placeholder-extension-website-url')}
+                  />
+                </Field>
+
+                <Field label={i18n('label-extension-tags')} full>
+                  <Input
+                    type="text"
+                    value={formData.tags}
+                    onInput={(e) => this.handleInputChange('tags', (e.target as HTMLInputElement).value)}
+                    placeholder={i18n('placeholder-extension-tags')}
+                  />
+                </Field>
+
+                <div className="col-span-full flex gap-2 pt-2">
+                  <Button
+                    onClick={this.handleSubmit}
+                    variant="primary"
+                  >
+                    {editingId ? i18n('button-save') : i18n('button-add')}
+                  </Button>
+                  <Button
+                    onClick={this.handleCancel}
+                    variant="neutral"
+                  >
+                    {i18n('button-cancel')}
+                  </Button>
+                </div>
+              </FormGrid>
+            </FormPanel>
+          ) : (
+            <div className="mb-4">
+              <Button
+                onClick={this.handleAddNew}
+                variant="primary"
               >
-                <FormGrid>
-                  <Field label={`${i18n('label-extension-name')} *`}>
-                    <Input
-                      type="text"
-                      value={formData.name}
-                      onInput={(e) => this.handleInputChange('name', (e.target as HTMLInputElement).value)}
-                      placeholder={i18n('placeholder-extension-name')}
-                    />
-                  </Field>
+                + {i18n('button-add-custom-extension')}
+              </Button>
+            </div>
+          )}
 
-                  <Field label={i18n('label-extension-author')}>
-                    <Input
-                      type="text"
-                      value={formData.author}
-                      onInput={(e) => this.handleInputChange('author', (e.target as HTMLInputElement).value)}
-                      placeholder={i18n('placeholder-extension-author')}
-                    />
-                  </Field>
-
-                  <Field label={i18n('label-extension-description')} full>
-                    <Textarea
-                      value={formData.description}
-                      onInput={(e) => this.handleInputChange('description', (e.target as HTMLTextAreaElement).value)}
-                      placeholder={i18n('placeholder-extension-description')}
-                      rows={3}
-                    />
-                  </Field>
-
-                  <Field label={`${i18n('label-extension-source-url')} *`} full>
-                    <Input
-                      type="text"
-                      value={formData.sourceUrl}
-                      onInput={(e) => this.handleInputChange('sourceUrl', (e.target as HTMLInputElement).value)}
-                      placeholder={i18n('placeholder-extension-source-url')}
-                    />
-                  </Field>
-
-                  <Field label={i18n('label-extension-type')}>
-                    <Select
-                      value={formData.type}
-                      onChange={(e) => this.handleInputChange('type', (e.target as HTMLSelectElement).value)}
-                    >
-                      <option value="script">{i18n('option-type-script')}</option>
-                      <option value="module">{i18n('option-type-module')}</option>
-                    </Select>
-                  </Field>
-
-                  <Field label={i18n('label-extension-icon-url')}>
-                    <Input
-                      type="text"
-                      value={formData.icon}
-                      onInput={(e) => this.handleInputChange('icon', (e.target as HTMLInputElement).value)}
-                      placeholder={i18n('placeholder-extension-icon-url')}
-                    />
-                  </Field>
-
-                  <Field label={i18n('label-extension-repository-url')}>
-                    <Input
-                      type="text"
-                      value={formData.repository}
-                      onInput={(e) => this.handleInputChange('repository', (e.target as HTMLInputElement).value)}
-                      placeholder={i18n('placeholder-extension-repository-url')}
-                    />
-                  </Field>
-
-                  <Field label={i18n('label-extension-website-url')}>
-                    <Input
-                      type="text"
-                      value={formData.website}
-                      onInput={(e) => this.handleInputChange('website', (e.target as HTMLInputElement).value)}
-                      placeholder={i18n('placeholder-extension-website-url')}
-                    />
-                  </Field>
-
-                  <Field label={i18n('label-extension-tags')} full>
-                    <Input
-                      type="text"
-                      value={formData.tags}
-                      onInput={(e) => this.handleInputChange('tags', (e.target as HTMLInputElement).value)}
-                      placeholder={i18n('placeholder-extension-tags')}
-                    />
-                  </Field>
-
-                  <div className="col-span-full flex gap-2 pt-2">
-                    <Button
-                      onClick={this.handleSubmit}
-                      variant="primary"
-                    >
-                      {editingId ? i18n('button-save') : i18n('button-add')}
-                    </Button>
-                    <Button
-                      onClick={this.handleCancel}
-                      variant="neutral"
-                    >
-                      {i18n('button-cancel')}
-                    </Button>
-                  </div>
-                </FormGrid>
-              </FormPanel>
+          {/* Extensions List */}
+          <Panel list title={`${i18n('label-custom-extensions')} (${extensions.length})`}>
+            {extensions.length === 0 ? (
+              <EmptyState title={i18n('message-no-custom-extensions')}/>
             ) : (
-              <div className="mb-4">
-                <Button
-                  onClick={this.handleAddNew}
-                  variant="primary"
-                >
-                  + {i18n('button-add-custom-extension')}
-                </Button>
+              <div>
+                {extensions.map(ext => (
+                  <ListRow key={ext.id}>
+                    <div className="flex items-start gap-3">
+                      {ext.icon && (
+                        <img
+                          src={ext.icon}
+                          alt={ext.name}
+                          className="h-10 w-10 flex-none rounded-lg border border-slate-200 bg-slate-50 object-cover"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).style.display = 'none';
+                          }}
+                        />
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <h4 className="text-[0.96875rem] font-bold leading-snug text-slate-900">{ext.name}</h4>
+                        <p className="text-[0.8125rem] text-slate-500">by {ext.author}</p>
+                        {ext.description && (
+                          <p className="mt-2 text-sm leading-relaxed text-slate-700">{ext.description}</p>
+                        )}
+                        <div className="mt-2 break-all text-[0.8125rem] text-slate-500">
+                          <span className="font-medium">URL:</span> {ext.sourceUrl}
+                        </div>
+                        {ext.tags && ext.tags.length > 0 && (
+                          <div className="flex gap-1 mt-2 flex-wrap">
+                            {ext.tags.map(tag => (
+                              <Badge key={tag}>
+                                {tag}
+                              </Badge>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex gap-2 flex-shrink-0">
+                        <Button
+                          onClick={() => this.handleEdit(ext)}
+                          variant="primary"
+                          size="sm"
+                        >
+                          {i18n('button-edit')}
+                        </Button>
+                        <Button
+                          onClick={() => this.handleDelete(ext.id)}
+                          variant="danger"
+                          size="sm"
+                        >
+                          {i18n('button-delete')}
+                        </Button>
+                      </div>
+                    </div>
+                  </ListRow>
+                ))}
               </div>
             )}
-
-            {/* Extensions List */}
-          <Panel list title={`${i18n('label-custom-extensions')} (${extensions.length})`}>
-              {extensions.length === 0 ? (
-                <EmptyState title={i18n('message-no-custom-extensions')}/>
-              ) : (
-                <div>
-                  {extensions.map(ext => (
-                    <ListRow key={ext.id}>
-                      <div className="flex items-start gap-3">
-                        {ext.icon && (
-                          <img
-                            src={ext.icon}
-                            alt={ext.name}
-                            className="h-10 w-10 flex-none rounded-lg border border-slate-200 bg-slate-50 object-cover"
-                            onError={(e) => {
-                              (e.target as HTMLImageElement).style.display = 'none';
-                            }}
-                          />
-                        )}
-                        <div className="flex-1 min-w-0">
-                          <h4 className="text-[0.96875rem] font-bold leading-snug text-slate-900">{ext.name}</h4>
-                          <p className="text-[0.8125rem] text-slate-500">by {ext.author}</p>
-                          {ext.description && (
-                            <p className="mt-2 text-sm leading-relaxed text-slate-700">{ext.description}</p>
-                          )}
-                          <div className="mt-2 break-all text-[0.8125rem] text-slate-500">
-                            <span className="font-medium">URL:</span> {ext.sourceUrl}
-                          </div>
-                          {ext.tags && ext.tags.length > 0 && (
-                            <div className="flex gap-1 mt-2 flex-wrap">
-                              {ext.tags.map(tag => (
-                                <Badge key={tag}>
-                                  {tag}
-                                </Badge>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                        <div className="flex gap-2 flex-shrink-0">
-                          <Button
-                            onClick={() => this.handleEdit(ext)}
-                            variant="primary"
-                            size="sm"
-                          >
-                            {i18n('button-edit')}
-                          </Button>
-                          <Button
-                            onClick={() => this.handleDelete(ext.id)}
-                            variant="danger"
-                            size="sm"
-                          >
-                            {i18n('button-delete')}
-                          </Button>
-                        </div>
-                      </div>
-                    </ListRow>
-                  ))}
-                </div>
-              )}
           </Panel>
         </ModalPanel>
       </ModalBackdrop>
