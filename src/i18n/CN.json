@@ -109,6 +109,7 @@
   "placeholder-extension-tags": "例如：工具, 增强, 自定义",
   "option-type-script": "脚本 (script)",
   "option-type-module": "模块 (module)",
+  "option-type-eval": "全局执行 (eval)",
   "error-extension-name-required": "扩展名称为必填项",
   "error-extension-source-url-required": "源代码 URL 为必填项",
   "error-extension-invalid-url": "无效的 URL 格式",
@@ -122,4 +123,3 @@
   "success-extension-updated": "自定义扩展更新成功",
   "success-extension-deleted": "自定义扩展删除成功"
 }
-

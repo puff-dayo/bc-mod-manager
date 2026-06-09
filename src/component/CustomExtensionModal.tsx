@@ -1,5 +1,5 @@
 import {Component} from 'preact';
-import {type CustomExtension, CustomExtensionService} from '../service/CustomExtensionService';
+import {type CustomExtension, type CustomExtensionType, CustomExtensionService} from '../service/CustomExtensionService';
 import i18n from '../i18n/i18n';
 import Alert from './ui/Alert';
 import Badge from './ui/Badge';
@@ -30,7 +30,7 @@ interface CustomExtensionModalState {
     author: string;
     description: string;
     sourceUrl: string;
-    type: 'script' | 'module';
+    type: CustomExtensionType;
     icon: string;
     repository: string;
     website: string;
@@ -59,7 +59,7 @@ export default class CustomExtensionModal extends Component<CustomExtensionModal
       author: '',
       description: '',
       sourceUrl: '',
-      type: 'script' as 'script' | 'module',
+      type: 'script' as CustomExtensionType,
       icon: '',
       repository: '',
       website: '',
@@ -276,10 +276,11 @@ export default class CustomExtensionModal extends Component<CustomExtensionModal
             <Field label={i18n('label-extension-type')}>
               <Select
                 value={formData.type}
-                onChange={(e) => this.handleInputChange('type', (e.target as HTMLSelectElement).value)}
+                onChange={(e) => this.handleInputChange('type', (e.target as HTMLSelectElement).value as CustomExtensionType)}
               >
                 <option value="script">{i18n('option-type-script')}</option>
                 <option value="module">{i18n('option-type-module')}</option>
+                <option value="eval">{i18n('option-type-eval')}</option>
               </Select>
             </Field>
 

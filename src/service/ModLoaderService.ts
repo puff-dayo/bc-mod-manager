@@ -1,6 +1,8 @@
 import {ModService} from './ModService';
 import {LogService} from './LogService';
 
+type ModLoadType = 'script' | 'module' | 'eval';
+
 /**
  * Mod Loader Service
  * Handles loading and injecting mod scripts into the page
@@ -82,74 +84,22 @@ export class ModLoaderService {
       LogService.info(`ModLoaderService: Loading mod ${modName} from ${sourceUrl}`);
 
       // Register in FUSAM as loading if available
-      if (window.FUSAM) {
-        window.FUSAM.addons[modId] = {
-          distribution: distribution,
-          status: 'loading'
-        };
-      }
+      this.setFusamStatus(modId, distribution, 'loading');
 
-      // Create script element
-      const script = document.createElement('script');
-      script.src = sourceUrl;
-      switch (type) {
+      switch (this.normalizeLoadType(type)) {
         case 'module':
-          script.type = 'module';
+          this.injectScriptElement(modId, registryId, sourceUrl, modName, distribution, modKey, 'module');
+          break;
+        case 'eval':
+          this.loadEvalScript(modId, registryId, sourceUrl, modName, distribution, modKey);
           break;
         case 'script':
         default:
-          script.type = 'text/javascript';
+          this.injectScriptElement(modId, registryId, sourceUrl, modName, distribution, modKey, 'script');
           break;
       }
-      script.async = true;
-      script.crossOrigin = "anonymous";
-
-      script.setAttribute('data-mod-id', modId);
-      script.setAttribute('data-registry-id', registryId);
-      script.setAttribute('data-mod-name', modName);
-      script.setAttribute('data-distribution', distribution);
-
-      // Add load event listener
-      script.onload = () => {
-        LogService.info(`ModLoaderService: Successfully loaded mod ${modName}`);
-        this.loadedMods.add(modKey);
-
-        // Update FUSAM status to loaded
-        if (window.FUSAM) {
-          window.FUSAM.addons[modId] = {
-            distribution: distribution,
-            status: 'loaded'
-          };
-        }
-      };
-
-      // Add error event listener
-      script.onerror = (error) => {
-        LogService.error(`ModLoaderService: Failed to load mod ${modName}`, error);
-
-        // Update FUSAM status to error
-        if (window.FUSAM) {
-          window.FUSAM.addons[modId] = {
-            distribution: distribution,
-            status: 'error'
-          };
-        }
-      };
-
-      // Inject script into body
-      document.head.appendChild(script);
-
-      LogService.debug(`ModLoaderService: Script element created and appended for ${modName}`);
     } catch (error) {
-      LogService.error(`ModLoaderService: Error loading mod ${modName}`, error);
-
-      // Update FUSAM status to error
-      if (window.FUSAM) {
-        window.FUSAM.addons[modId] = {
-          distribution: distribution,
-          status: 'error'
-        };
-      }
+      this.handleLoadError(modId, distribution, modName, error);
     }
   }
 
@@ -171,9 +121,14 @@ export class ModLoaderService {
     try {
       LogService.info(`ModLoaderService: Preloading mod ${modName} from ${sourceUrl}`);
       const link = document.createElement('link');
-      switch (type) {
+      switch (this.normalizeLoadType(type)) {
         case 'module':
           link.rel = 'modulepreload';
+          break;
+        case 'eval':
+          link.rel = 'preload';
+          link.as = 'fetch';
+          link.crossOrigin = 'anonymous';
           break;
         case 'script':
         default:
@@ -286,7 +241,7 @@ export class ModLoaderService {
 
   private static preloadAllEnabledModsImpl(): void {
     const modsWithDetails = ModService.getAllModsWithDetails();
-    const enabledMods = modsWithDetails.filter(mod => mod.enabled && mod.type == 'module');
+    const enabledMods = modsWithDetails.filter(mod => mod.enabled && (mod.type === 'module' || mod.type === 'eval'));
     enabledMods.forEach(mod => {
       this.preloadMod(mod.modId, mod.type, mod.registryId, mod.sourceUrl, mod.name, mod.selectedVersion);
     });
@@ -303,5 +258,111 @@ export class ModLoaderService {
       this.loadMod(mod.modId, mod.type || 'script', mod.registryId, mod.sourceUrl, mod.name, mod.selectedVersion);
     });
   }
-}
 
+  private static normalizeLoadType(type: string | undefined): ModLoadType {
+    if (type === 'module' || type === 'eval') {
+      return type;
+    }
+    return 'script';
+  }
+
+  private static async loadEvalScript(
+    modId: string,
+    registryId: string,
+    sourceUrl: string,
+    modName: string,
+    distribution: string,
+    modKey: string,
+  ): Promise<void> {
+    try {
+      const response = await fetch(sourceUrl);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const source = await response.text();
+      this.executeInGlobalScope(modId, registryId, source, sourceUrl, modName, distribution);
+      this.handleLoadSuccess(modId, distribution, modName, modKey);
+    } catch (error) {
+      this.handleLoadError(modId, distribution, modName, error);
+    }
+  }
+
+  private static executeInGlobalScope(
+    modId: string,
+    registryId: string,
+    source: string,
+    sourceUrl: string,
+    modName: string,
+    distribution: string,
+  ): void {
+    const sanitizedSourceUrl = sourceUrl.replace(/[\r\n]/g, '');
+    const script = document.createElement('script');
+    script.type = 'text/javascript';
+    // A classic inline script gets page global-script semantics; direct eval does not.
+    script.text = `${source}\n//# sourceURL=${sanitizedSourceUrl}`;
+    script.setAttribute('data-mod-id', modId);
+    script.setAttribute('data-registry-id', registryId);
+    script.setAttribute('data-mod-name', modName);
+    script.setAttribute('data-distribution', distribution);
+    script.setAttribute('data-load-type', 'eval');
+    document.head.appendChild(script);
+  }
+
+  private static injectScriptElement(
+    modId: string,
+    registryId: string,
+    sourceUrl: string,
+    modName: string,
+    distribution: string,
+    modKey: string,
+    type: Exclude<ModLoadType, 'eval'>,
+  ): void {
+    // Create script element
+    const script = document.createElement('script');
+    script.src = sourceUrl;
+    script.type = type === 'module' ? 'module' : 'text/javascript';
+    script.async = true;
+    script.crossOrigin = "anonymous";
+
+    script.setAttribute('data-mod-id', modId);
+    script.setAttribute('data-registry-id', registryId);
+    script.setAttribute('data-mod-name', modName);
+    script.setAttribute('data-distribution', distribution);
+
+    // Add load event listener
+    script.onload = () => {
+      this.handleLoadSuccess(modId, distribution, modName, modKey);
+    };
+
+    // Add error event listener
+    script.onerror = (error) => {
+      this.handleLoadError(modId, distribution, modName, error);
+    };
+
+    // Inject script into body
+    document.head.appendChild(script);
+
+    LogService.debug(`ModLoaderService: Script element created and appended for ${modName}`);
+  }
+
+  private static handleLoadSuccess(modId: string, distribution: string, modName: string, modKey: string): void {
+    LogService.info(`ModLoaderService: Successfully loaded mod ${modName}`);
+    this.loadedMods.add(modKey);
+    this.setFusamStatus(modId, distribution, 'loaded');
+  }
+
+  private static handleLoadError(modId: string, distribution: string, modName: string, error: unknown): void {
+    LogService.error(`ModLoaderService: Failed to load mod ${modName}`, error);
+    this.setFusamStatus(modId, distribution, 'error');
+  }
+
+  private static setFusamStatus(modId: string, distribution: string, status: FUSAMAddonState['status']): void {
+    if (window.FUSAM) {
+      window.FUSAM.addons[modId] = {
+        distribution: distribution,
+        status: status
+      };
+    }
+  }
+}

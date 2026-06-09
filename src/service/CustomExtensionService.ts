@@ -1,6 +1,8 @@
 import {LocalStorageService} from './LocalStorageService';
 import {LogService} from './LogService';
 
+export type CustomExtensionType = 'script' | 'module' | 'eval';
+
 /**
  * Custom Extension Definition
  * Allows users to add their own extensions (including local development ones)
@@ -11,7 +13,7 @@ export interface CustomExtension {
   description: string;              // Description
   author: string;                   // Author name
   sourceUrl: string;                // URL to the extension script
-  type: 'script' | 'module';        // Script type
+  type: CustomExtensionType;        // Script type
   icon?: string;                    // Optional icon URL
   repository?: string;              // Optional repository URL
   website?: string;                 // Optional website URL
@@ -218,4 +220,3 @@ export class CustomExtensionService {
     return `custom_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
   }
 }
-

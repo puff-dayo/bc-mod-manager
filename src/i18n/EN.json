@@ -109,6 +109,7 @@
   "placeholder-extension-tags": "e.g., tools, enhancement, custom",
   "option-type-script": "Script",
   "option-type-module": "Module",
+  "option-type-eval": "Eval",
   "error-extension-name-required": "Extension name is required",
   "error-extension-source-url-required": "Source URL is required",
   "error-extension-invalid-url": "Invalid URL format",
