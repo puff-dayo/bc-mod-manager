@@ -121,5 +121,17 @@
   "message-custom-extensions-info": "Custom extensions allow you to add your own extensions or locally developed ones. Supports http://, https://, and file:// protocols.",
   "success-extension-added": "Custom extension added successfully",
   "success-extension-updated": "Custom extension updated successfully",
-  "success-extension-deleted": "Custom extension deleted successfully"
+  "success-extension-deleted": "Custom extension deleted successfully",
+  "loading-title": "Loading Mods",
+  "loading-waiting-game": "Waiting for the game to load…",
+  "loading-in-progress": "Loading mods…",
+  "loading-complete": "All mods loaded",
+  "loading-complete-errors": "Loaded, {count} failed",
+  "loading-status-pending": "Pending",
+  "loading-status-loading": "Loading",
+  "loading-status-loaded": "Loaded",
+  "loading-status-error": "Failed",
+  "loading-outdated-title": "Mod loader update available",
+  "loading-outdated-detail": "An older cached version is running. Reload the page to update to the latest version.",
+  "loading-button-reload": "Reload page"
 }

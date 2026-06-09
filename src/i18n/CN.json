@@ -121,5 +121,17 @@
   "message-custom-extensions-info": "自定义扩展允许您添加自己开发的扩展或本地正在开发的扩展。支持 http://, https:// 和 file:// 协议。",
   "success-extension-added": "自定义扩展添加成功",
   "success-extension-updated": "自定义扩展更新成功",
-  "success-extension-deleted": "自定义扩展删除成功"
+  "success-extension-deleted": "自定义扩展删除成功",
+  "loading-title": "正在加载模组",
+  "loading-waiting-game": "正在等待游戏加载…",
+  "loading-in-progress": "正在加载模组…",
+  "loading-complete": "模组加载完成",
+  "loading-complete-errors": "加载完成，{count} 个失败",
+  "loading-status-pending": "等待中",
+  "loading-status-loading": "加载中",
+  "loading-status-loaded": "已加载",
+  "loading-status-error": "失败",
+  "loading-outdated-title": "模组加载器有新版本",
+  "loading-outdated-detail": "当前运行的是缓存的旧版本，请刷新页面以更新到最新版本。",
+  "loading-button-reload": "刷新页面"
 }

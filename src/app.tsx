@@ -5,6 +5,7 @@ import RegistryManagerPage from "@/page/registrymanager/RegistryManagerPage.tsx"
 import ModManagerPage from "@/page/modmanager/ModManagerPage.tsx";
 import LogManagerPage from "@/page/logmanager/LogManagerPage.tsx";
 import ModalContainer from "@/component/ModalContainer.tsx";
+import ModLoadingWindow from "@/component/ModLoadingWindow.tsx";
 import {ModLoaderService} from "@/service/ModLoaderService.ts";
 import AppLauncher, {type AppLauncherItem} from "@/component/AppLauncher.tsx";
 import AppBackdrop from "@/component/ui/AppBackdrop.tsx";
@@ -120,6 +121,8 @@ export default class App extends Component<{}, AppState> {
         )}
 
         <ModalContainer/>
+
+        <ModLoadingWindow/>
       </>
     )
   }

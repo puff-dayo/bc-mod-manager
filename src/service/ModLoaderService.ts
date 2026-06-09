@@ -4,6 +4,38 @@ import {LogService} from '@/service/LogService';
 type ModLoadType = 'script' | 'module' | 'eval';
 
 /**
+ * Load status of a single mod, as surfaced to the loading window.
+ */
+export type ModLoadStatus = 'pending' | 'loading' | 'loaded' | 'error';
+
+/**
+ * Progress entry for a single mod.
+ */
+export interface ModLoadEntry {
+  modKey: string;
+  modId: string;
+  registryId: string;
+  name: string;
+  status: ModLoadStatus;
+}
+
+/**
+ * Snapshot of the overall mod loading progress.
+ */
+export interface ModLoadProgress {
+  entries: ModLoadEntry[];
+  total: number;
+  settled: number;        // loaded + errored
+  loaded: number;
+  errored: number;
+  waitingForGame: boolean; // waiting for the game (Player) to become available
+  started: boolean;        // loadAllEnabledMods has been called
+  finished: boolean;       // started, no longer waiting, and every mod has settled
+}
+
+type ProgressListener = (progress: ModLoadProgress) => void;
+
+/**
  * Mod Loader Service
  * Handles loading and injecting mod scripts into the page
  */
@@ -13,6 +45,10 @@ export class ModLoaderService {
   private static hasDisabledMods: boolean = false;
   private static scheduledPreload: number | null = null;
   private static scheduledLoad: number | null = null;
+  private static loadProgress: Map<string, ModLoadEntry> = new Map();
+  private static progressListeners: Set<ProgressListener> = new Set();
+  private static loadStarted: boolean = false;
+  private static waitingForGame: boolean = false;
 
   /**
    * Initialize the mod loader
@@ -35,13 +71,24 @@ export class ModLoaderService {
    * Load all enabled mods
    */
   static loadAllEnabledMods(): void {
+    this.loadStarted = true;
+    // Register the enabled mods up front so the loading window can show them as
+    // pending even while we are still waiting for the game to become available.
+    this.registerPendingMods();
+
     if (typeof Player !== "undefined" && !!Player) {
+      this.waitingForGame = false;
+      this.notifyProgress();
       this.loadAllEnabledModsImpl();
     } else if (!this.scheduledLoad) {
+      this.waitingForGame = true;
+      this.notifyProgress();
       this.scheduledLoad = setInterval(() => {
         if (typeof Player !== "undefined" && !!Player) {
           clearInterval(this.scheduledLoad!);
           this.scheduledLoad = null;
+          this.waitingForGame = false;
+          this.notifyProgress();
           this.loadAllEnabledModsImpl();
         }
       }, 5);
@@ -71,12 +118,14 @@ export class ModLoaderService {
     // Skip if already loaded
     if (this.loadedMods.has(modKey)) {
       LogService.debug(`ModLoaderService: Mod ${modName} (${modKey}) already loaded, skipping`);
+      this.trackMod(modKey, modId, registryId, modName, 'loaded');
       return;
     }
 
     // Skip if no source URL
     if (!sourceUrl) {
       LogService.warn(`ModLoaderService: Mod ${modName} (${modKey}) has no source URL, skipping`);
+      this.trackMod(modKey, modId, registryId, modName, 'error');
       return;
     }
 
@@ -85,6 +134,7 @@ export class ModLoaderService {
 
       // Register in FUSAM as loading if available
       this.setFusamStatus(modId, distribution, 'loading');
+      this.trackMod(modKey, modId, registryId, modName, 'loading');
 
       switch (this.normalizeLoadType(type)) {
         case 'module':
@@ -99,7 +149,7 @@ export class ModLoaderService {
           break;
       }
     } catch (error) {
-      this.handleLoadError(modId, distribution, modName, error);
+      this.handleLoadError(modId, distribution, modName, modKey, error);
     }
   }
 
@@ -221,6 +271,41 @@ export class ModLoaderService {
   }
 
   /**
+   * Subscribe to mod loading progress updates.
+   * The listener is invoked immediately with the current snapshot and again on
+   * every change. Returns an unsubscribe function.
+   */
+  static subscribeProgress(listener: ProgressListener): () => void {
+    this.progressListeners.add(listener);
+    listener(this.getProgress());
+    return () => {
+      this.progressListeners.delete(listener);
+    };
+  }
+
+  /**
+   * Get a snapshot of the current mod loading progress.
+   */
+  static getProgress(): ModLoadProgress {
+    const entries = Array.from(this.loadProgress.values());
+    const loaded = entries.filter(entry => entry.status === 'loaded').length;
+    const errored = entries.filter(entry => entry.status === 'error').length;
+    const settled = loaded + errored;
+    const total = entries.length;
+    const finished = this.loadStarted && !this.waitingForGame && settled === total;
+    return {
+      entries,
+      total,
+      settled,
+      loaded,
+      errored,
+      waitingForGame: this.waitingForGame,
+      started: this.loadStarted,
+      finished,
+    };
+  }
+
+  /**
    * Unload all mods (remove script tags)
    * Note: This may not fully unload mods that have already executed
    */
@@ -284,7 +369,7 @@ export class ModLoaderService {
       this.executeInGlobalScope(modId, registryId, source, sourceUrl, modName, distribution);
       this.handleLoadSuccess(modId, distribution, modName, modKey);
     } catch (error) {
-      this.handleLoadError(modId, distribution, modName, error);
+      this.handleLoadError(modId, distribution, modName, modKey, error);
     }
   }
 
@@ -337,7 +422,7 @@ export class ModLoaderService {
 
     // Add error event listener
     script.onerror = (error) => {
-      this.handleLoadError(modId, distribution, modName, error);
+      this.handleLoadError(modId, distribution, modName, modKey, error);
     };
 
     // Inject script into body
@@ -350,11 +435,85 @@ export class ModLoaderService {
     LogService.info(`ModLoaderService: Successfully loaded mod ${modName}`);
     this.loadedMods.add(modKey);
     this.setFusamStatus(modId, distribution, 'loaded');
+    this.updateModStatus(modKey, 'loaded');
   }
 
-  private static handleLoadError(modId: string, distribution: string, modName: string, error: unknown): void {
+  private static handleLoadError(modId: string, distribution: string, modName: string, modKey: string, error: unknown): void {
     LogService.error(`ModLoaderService: Failed to load mod ${modName}`, error);
     this.setFusamStatus(modId, distribution, 'error');
+    this.updateModStatus(modKey, 'error');
+  }
+
+  /**
+   * Seed the progress map with all currently enabled mods as "pending".
+   * Existing entries are left untouched so already-resolved statuses are kept.
+   */
+  private static registerPendingMods(): void {
+    const enabledMods = ModService.getAllModsWithDetails().filter(mod => mod.enabled);
+    let changed = false;
+    enabledMods.forEach(mod => {
+      const modKey = `${mod.modId}_${mod.registryId}`;
+      if (!this.loadProgress.has(modKey)) {
+        this.loadProgress.set(modKey, {
+          modKey,
+          modId: mod.modId,
+          registryId: mod.registryId,
+          name: mod.name,
+          status: 'pending',
+        });
+        changed = true;
+      }
+    });
+    if (changed) {
+      this.notifyProgress();
+    }
+  }
+
+  /**
+   * Create or update a progress entry, notifying listeners only on a real change.
+   */
+  private static trackMod(modKey: string, modId: string, registryId: string, name: string, status: ModLoadStatus): void {
+    const existing = this.loadProgress.get(modKey);
+    if (existing) {
+      let changed = false;
+      if (existing.status !== status) {
+        existing.status = status;
+        changed = true;
+      }
+      if (name && existing.name !== name) {
+        existing.name = name;
+        changed = true;
+      }
+      if (changed) {
+        this.notifyProgress();
+      }
+      return;
+    }
+    this.loadProgress.set(modKey, {modKey, modId, registryId, name, status});
+    this.notifyProgress();
+  }
+
+  /**
+   * Update the status of an existing progress entry.
+   */
+  private static updateModStatus(modKey: string, status: ModLoadStatus): void {
+    const existing = this.loadProgress.get(modKey);
+    if (!existing || existing.status === status) {
+      return;
+    }
+    existing.status = status;
+    this.notifyProgress();
+  }
+
+  private static notifyProgress(): void {
+    const snapshot = this.getProgress();
+    this.progressListeners.forEach(listener => {
+      try {
+        listener(snapshot);
+      } catch (error) {
+        LogService.error('ModLoaderService: progress listener threw', error);
+      }
+    });
   }
 
   private static setFusamStatus(modId: string, distribution: string, status: FUSAMAddonState['status']): void {
