@@ -8,7 +8,8 @@ interface ListProps extends Omit<JSX.HTMLAttributes<HTMLDivElement>, 'class' | '
 
 export default function List({children, className, ...props}: ListProps) {
   return (
-    <div {...props} className={classNames('overflow-hidden rounded-lg border border-bmm-border bg-bmm-surface shadow-bmm-card', className)}>
+    <div {...props}
+         className={classNames('overflow-hidden rounded-lg border border-bmm-border bg-bmm-surface shadow-bmm-card', className)}>
       {children}
     </div>
   );

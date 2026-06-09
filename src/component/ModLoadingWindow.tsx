@@ -4,6 +4,7 @@ import classNames from "@/component/ui/classNames.ts";
 import Icon from "@/component/ui/Icon.tsx";
 import {ModLoaderService, type ModLoadProgress, type ModLoadStatus} from "@/service/ModLoaderService.ts";
 import {LoaderVersionService} from "@/service/LoaderVersionService.ts";
+import {formatDuration} from "@/component/ui/format.ts";
 
 // Auto-dismiss the window shortly after loading finishes (unless the build is
 // outdated, in which case it stays so the user can act on the warning).
@@ -88,61 +89,6 @@ export default class ModLoadingWindow extends Component<{}, ModLoadingWindowStat
     }
   }
 
-  private scheduleAutoHide(finished: boolean) {
-    if (finished && this.hideTimer === null && !LoaderVersionService.isOutdated()) {
-      this.hideTimer = window.setTimeout(() => {
-        this.hideTimer = null;
-        this.setState({dismissed: true});
-      }, AUTO_HIDE_DELAY);
-    }
-  }
-
-  private clearHideTimer() {
-    if (this.hideTimer !== null) {
-      clearTimeout(this.hideTimer);
-      this.hideTimer = null;
-    }
-  }
-
-  private handleClose = () => {
-    this.clearHideTimer();
-    this.setState({dismissed: true});
-  };
-
-  private handleReload = () => {
-    window.location.reload();
-  };
-
-  private statusText(): string {
-    const {progress, outdated} = this.state;
-    if (progress.waitingForGame) {
-      return i18n('loading-waiting-game');
-    }
-    if (progress.total === 0) {
-      return outdated ? i18n('loading-outdated-title') : i18n('loading-complete');
-    }
-    if (progress.finished) {
-      return progress.errored > 0
-        ? i18n('loading-complete-errors', {count: progress.errored})
-        : i18n('loading-complete');
-    }
-    return i18n('loading-in-progress');
-  }
-
-  private renderStatusBadge(status: ModLoadStatus) {
-    return (
-      <span
-        className={classNames(
-          'inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full border px-2 py-0.5 text-[0.6875rem] font-bold leading-none',
-          STATUS_STYLES[status],
-        )}
-      >
-        {status === 'loading' && <Icon name="refresh" spin/>}
-        {i18n(STATUS_LABEL_KEY[status])}
-      </span>
-    );
-  }
-
   render() {
     const {progress, outdated, dismissed} = this.state;
     if (dismissed) {
@@ -218,10 +164,24 @@ export default class ModLoadingWindow extends Component<{}, ModLoadingWindowStat
                 {progress.entries.map(entry => (
                   <li
                     key={entry.modKey}
-                    className="flex items-center justify-between gap-2 rounded-md px-2 py-1.5 text-xs hover:bg-bmm-surface-muted"
+                    className="rounded-md px-2 py-1.5 text-xs hover:bg-bmm-surface-muted"
                   >
-                    <span className="truncate text-bmm-ink">{entry.name}</span>
-                    {this.renderStatusBadge(entry.status)}
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="truncate text-bmm-ink" title={entry.name}>{entry.name}</span>
+                      <div className="flex shrink-0 items-center gap-1.5">
+                        {entry.durationMs !== undefined && (entry.status === 'loaded' || entry.status === 'error') && (
+                          <span className="tabular-nums text-[0.6875rem] text-bmm-faint">
+                            {formatDuration(entry.durationMs)}
+                          </span>
+                        )}
+                        {this.renderStatusBadge(entry.status)}
+                      </div>
+                    </div>
+                    {entry.status === 'error' && entry.error && (
+                      <p className="m-0 mt-1 line-clamp-2 text-[0.6875rem] leading-4 text-red-600" title={entry.error}>
+                        {entry.error}
+                      </p>
+                    )}
                   </li>
                 ))}
               </ul>
@@ -229,6 +189,64 @@ export default class ModLoadingWindow extends Component<{}, ModLoadingWindowStat
           </div>
         </div>
       </div>
+    );
+  }
+
+  private scheduleAutoHide(finished: boolean) {
+    if (finished && this.hideTimer === null && !LoaderVersionService.isOutdated()) {
+      this.hideTimer = window.setTimeout(() => {
+        this.hideTimer = null;
+        this.setState({dismissed: true});
+      }, AUTO_HIDE_DELAY);
+    }
+  }
+
+  private clearHideTimer() {
+    if (this.hideTimer !== null) {
+      clearTimeout(this.hideTimer);
+      this.hideTimer = null;
+    }
+  }
+
+  private handleClose = () => {
+    this.clearHideTimer();
+    this.setState({dismissed: true});
+  };
+
+  private handleReload = () => {
+    window.location.reload();
+  };
+
+  private statusText(): string {
+    const {progress, outdated} = this.state;
+    if (progress.waitingForGame) {
+      return i18n('loading-waiting-game');
+    }
+    if (progress.total === 0) {
+      return outdated ? i18n('loading-outdated-title') : i18n('loading-complete');
+    }
+    if (progress.finished) {
+      const base = progress.errored > 0
+        ? i18n('loading-complete-errors', {count: progress.errored})
+        : i18n('loading-complete');
+      return progress.totalDurationMs !== undefined
+        ? `${base} · ${formatDuration(progress.totalDurationMs)}`
+        : base;
+    }
+    return i18n('loading-in-progress');
+  }
+
+  private renderStatusBadge(status: ModLoadStatus) {
+    return (
+      <span
+        className={classNames(
+          'inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full border px-2 py-0.5 text-[0.6875rem] font-bold leading-none',
+          STATUS_STYLES[status],
+        )}
+      >
+        {status === 'loading' && <Icon name="refresh" spin/>}
+        {i18n(STATUS_LABEL_KEY[status])}
+      </span>
     );
   }
 }

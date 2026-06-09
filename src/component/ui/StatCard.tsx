@@ -20,7 +20,8 @@ export default function StatCard({className, label, value, variant = 'neutral', 
   }[variant];
 
   return (
-    <div {...props} className={classNames('rounded-lg border border-l-4 px-4 py-3 shadow-bmm-control', variantClass, className)}>
+    <div {...props}
+         className={classNames('rounded-lg border border-l-4 px-4 py-3 shadow-bmm-control', variantClass, className)}>
       <div className="text-2xl font-bold leading-none tracking-normal text-bmm-ink">{value}</div>
       <div className="mt-1.5 text-[0.8125rem] font-semibold text-bmm-muted">{label}</div>
     </div>

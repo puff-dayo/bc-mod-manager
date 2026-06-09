@@ -131,6 +131,11 @@
   "loading-status-loading": "加载中",
   "loading-status-loaded": "已加载",
   "loading-status-error": "失败",
+  "loading-status-not-loaded": "未加载",
+  "label-loaded-mods": "已加载",
+  "label-failed-mods": "加载失败",
+  "label-load-status": "加载状态",
+  "label-post-load-error": "加载后报错",
   "loading-outdated-title": "模组加载器有新版本",
   "loading-outdated-detail": "当前运行的是缓存的旧版本，请刷新页面以更新到最新版本。",
   "loading-button-reload": "刷新页面"

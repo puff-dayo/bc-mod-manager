@@ -1,7 +1,9 @@
 import {Component} from "preact";
 import {type ModConfig, ModService} from "@/service/ModService";
 import {type FusamAddon} from "@/service/RegistryDataService";
+import {type ModLoadEntry, ModLoaderService, type ModLoadStatus} from "@/service/ModLoaderService";
 import i18n, {currentLanguage} from "@/i18n/i18n.ts";
+import {formatDuration} from "@/component/ui/format";
 import CustomExtensionModal from "@/component/CustomExtensionModal";
 import Alert from "@/component/ui/Alert";
 import Badge, {type BadgeVariant} from "@/component/ui/Badge";
@@ -19,6 +21,21 @@ import StatsGrid from "@/component/ui/StatsGrid";
 import Toolbar from "@/component/ui/Toolbar";
 import ToolbarPrimary from "@/component/ui/ToolbarPrimary";
 
+
+const LOAD_STATUS_LABEL_KEY: Record<ModLoadStatus, string> = {
+  pending: 'loading-status-pending',
+  loading: 'loading-status-loading',
+  loaded: 'loading-status-loaded',
+  error: 'loading-status-error',
+};
+
+const LOAD_STATUS_VARIANT: Record<ModLoadStatus, BadgeVariant> = {
+  pending: 'neutral',
+  loading: 'primary',
+  loaded: 'success',
+  error: 'danger',
+};
+
 interface ModManagerState {
   availableMods: Array<{
     addon: FusamAddon;
@@ -33,9 +50,13 @@ interface ModManagerState {
   // Track selected versions for mods that aren't installed yet
   pendingVersions: Map<string, string>; // key: `${modId}_${registryId}`, value: version
   showCustomExtensionModal: boolean;
+  // Actual load status per mod, keyed by `${modId}_${registryId}`.
+  loadStatus: Map<string, ModLoadEntry>;
 }
 
 export default class ModManagerPage extends Component<{}, ModManagerState> {
+  private unsubscribeLoadStatus?: () => void;
+
   constructor(props: {}) {
     super(props);
     this.state = {
@@ -46,11 +67,23 @@ export default class ModManagerPage extends Component<{}, ModManagerState> {
       expandedModId: null,
       pendingVersions: new Map(),
       showCustomExtensionModal: false,
+      loadStatus: new Map(),
     };
   }
 
   componentDidMount() {
     this.loadMods();
+    // Keep the per-mod load status live so badges reflect the real outcome,
+    // including mods still loading or that crashed after the manager opened.
+    this.unsubscribeLoadStatus = ModLoaderService.subscribeProgress(progress => {
+      const loadStatus = new Map<string, ModLoadEntry>();
+      progress.entries.forEach(entry => loadStatus.set(entry.modKey, entry));
+      this.setState({loadStatus});
+    });
+  }
+
+  componentWillUnmount() {
+    this.unsubscribeLoadStatus?.();
   }
 
   loadMods = () => {
@@ -175,11 +208,41 @@ export default class ModManagerPage extends Component<{}, ModManagerState> {
     return filtered;
   };
 
+  /**
+   * Badge showing a mod's actual load outcome (loaded / failed / loading /
+   * pending), with the load time and any error surfaced on hover.
+   */
+  renderLoadBadge = (modKey: string) => {
+    const entry = this.state.loadStatus.get(modKey);
+
+    if (!entry) {
+      return (
+        <Badge variant="neutral" title={i18n('loading-status-not-loaded')}>
+          {i18n('loading-status-not-loaded')}
+        </Badge>
+      );
+    }
+
+    const label = i18n(LOAD_STATUS_LABEL_KEY[entry.status]);
+    const showDuration = entry.durationMs !== undefined
+      && (entry.status === 'loaded' || entry.status === 'error');
+
+    return (
+      <Badge variant={LOAD_STATUS_VARIANT[entry.status]} title={entry.error || label}>
+        {label}{showDuration ? ` · ${formatDuration(entry.durationMs!)}` : ''}
+      </Badge>
+    );
+  };
+
   render() {
     const {error, expandedModId, showCustomExtensionModal} = this.state;
     const filteredMods = this.getFilteredMods();
     const enabledCount = ModService.getEnabledCount();
     const totalCount = this.state.availableMods.length;
+
+    const loadEntries = Array.from(this.state.loadStatus.values());
+    const loadedCount = loadEntries.filter(entry => entry.status === 'loaded').length;
+    const failedCount = loadEntries.filter(entry => entry.status === 'error').length;
 
     return (
       <Page size="wide">
@@ -205,6 +268,10 @@ export default class ModManagerPage extends Component<{}, ModManagerState> {
           <StatCard label={i18n('label-total-mods')} value={totalCount} variant="primary"/>
           <StatCard label={i18n('label-enabled-mods')} value={enabledCount} variant="success"/>
           <StatCard label={i18n('label-disabled-mods')} value={totalCount - enabledCount}/>
+          <StatCard label={i18n('label-loaded-mods')} value={loadedCount} variant="success"/>
+          {failedCount > 0 && (
+            <StatCard label={i18n('label-failed-mods')} value={failedCount} variant="danger"/>
+          )}
         </StatsGrid>
 
         {/* Filters and Search */}
@@ -308,6 +375,9 @@ export default class ModManagerPage extends Component<{}, ModManagerState> {
                             </Badge>
                           )}
 
+                          {/* Actual Load Status */}
+                          {isEnabled && this.renderLoadBadge(uniqueId)}
+
                           {/* Version Selector - Always show if versions available */}
                           {mod.addon.versions.length > 0 && (
                             <div className="flex items-center gap-2">
@@ -367,7 +437,8 @@ export default class ModManagerPage extends Component<{}, ModManagerState> {
 
                         {/* Expanded Details */}
                         {isExpanded && (
-                          <div className="mt-4 rounded-lg border border-bmm-border bg-bmm-surface-raised p-3.5 shadow-bmm-control">
+                          <div
+                            className="mt-4 rounded-lg border border-bmm-border bg-bmm-surface-raised p-3.5 shadow-bmm-control">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                               {mod.addon.repository && (
                                 <div>
@@ -414,6 +485,30 @@ export default class ModManagerPage extends Component<{}, ModManagerState> {
                                   <span className="ml-2 text-[0.8125rem] text-bmm-muted">{mod.addon.type}</span>
                                 </div>
                               )}
+                              {isEnabled && (() => {
+                                const loadEntry = this.state.loadStatus.get(uniqueId);
+                                return (
+                                  <div className="md:col-span-2">
+                                    <span className="font-bold text-bmm-ink">{i18n('label-load-status')}:</span>
+                                    <span className="ml-2 inline-flex items-center gap-2 align-middle">
+                                      {this.renderLoadBadge(uniqueId)}
+                                      {loadEntry?.loadType && (
+                                        <span className="text-[0.8125rem] text-bmm-muted">{loadEntry.loadType}</span>
+                                      )}
+                                    </span>
+                                    {loadEntry?.status === 'error' && loadEntry.error && (
+                                      <p className="m-0 mt-1.5 break-words text-[0.8125rem] leading-5 text-red-600">
+                                        {loadEntry.error}
+                                      </p>
+                                    )}
+                                    {loadEntry?.postLoadError && (
+                                      <p className="m-0 mt-1.5 break-words text-[0.8125rem] leading-5 text-amber-700">
+                                        {i18n('label-post-load-error')}: {loadEntry.postLoadError}
+                                      </p>
+                                    )}
+                                  </div>
+                                );
+                              })()}
                               <div>
                                 <span className="font-bold text-bmm-ink">{i18n('label-registry')}:</span>
                                 <span

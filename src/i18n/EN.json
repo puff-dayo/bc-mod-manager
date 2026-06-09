@@ -131,6 +131,11 @@
   "loading-status-loading": "Loading",
   "loading-status-loaded": "Loaded",
   "loading-status-error": "Failed",
+  "loading-status-not-loaded": "Not loaded",
+  "label-loaded-mods": "Loaded",
+  "label-failed-mods": "Failed",
+  "label-load-status": "Load status",
+  "label-post-load-error": "Post-load error",
   "loading-outdated-title": "Mod loader update available",
   "loading-outdated-detail": "An older cached version is running. Reload the page to update to the latest version.",
   "loading-button-reload": "Reload page"

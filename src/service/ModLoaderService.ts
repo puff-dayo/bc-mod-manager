@@ -17,6 +17,13 @@ export interface ModLoadEntry {
   registryId: string;
   name: string;
   status: ModLoadStatus;
+  loadType?: ModLoadType;       // how the mod is injected (script/module/eval)
+  distribution?: string;        // selected version/distribution
+  startedAt?: number;           // timestamp when the mod started loading
+  settledAt?: number;           // timestamp when the mod finished (loaded or errored)
+  durationMs?: number;          // settledAt - startedAt (actual load time)
+  error?: string;               // failure reason when status === 'error'
+  postLoadError?: string;       // a runtime error thrown *after* the mod already loaded
 }
 
 /**
@@ -31,6 +38,7 @@ export interface ModLoadProgress {
   waitingForGame: boolean; // waiting for the game (Player) to become available
   started: boolean;        // loadAllEnabledMods has been called
   finished: boolean;       // started, no longer waiting, and every mod has settled
+  totalDurationMs?: number; // wall-clock span from the first start to the last settle
 }
 
 type ProgressListener = (progress: ModLoadProgress) => void;
@@ -49,6 +57,13 @@ export class ModLoaderService {
   private static progressListeners: Set<ProgressListener> = new Set();
   private static loadStarted: boolean = false;
   private static waitingForGame: boolean = false;
+  // Maps an absolute script URL to the mod it belongs to, so runtime errors
+  // surfaced by the global error handler can be attributed to the right mod.
+  private static sourceUrlToModKey: Map<string, string> = new Map();
+  // The mod whose eval source is being executed synchronously right now (eval
+  // scripts run inline, so their runtime errors have no useful filename).
+  private static executingEvalModKey: string | null = null;
+  private static runtimeErrorListenerInstalled: boolean = false;
 
   /**
    * Initialize the mod loader
@@ -56,6 +71,10 @@ export class ModLoaderService {
    */
   static initialize(): void {
     LogService.info('ModLoaderService: Initializing mod loader');
+
+    // Watch for runtime errors thrown by mod scripts so a mod that downloads
+    // fine but crashes while initializing is reported as failed, not loaded.
+    this.ensureRuntimeErrorListener();
 
     // Track initially enabled mods
     const enabledMods = ModService.getAllModsWithDetails().filter(mod => mod.enabled);
@@ -114,18 +133,19 @@ export class ModLoaderService {
    */
   static loadMod(modId: string, type: string, registryId: string, sourceUrl: string | undefined, modName: string, distribution: string = 'unknown'): void {
     const modKey = `${modId}_${registryId}`;
+    const loadType = this.normalizeLoadType(type);
 
     // Skip if already loaded
     if (this.loadedMods.has(modKey)) {
       LogService.debug(`ModLoaderService: Mod ${modName} (${modKey}) already loaded, skipping`);
-      this.trackMod(modKey, modId, registryId, modName, 'loaded');
+      this.trackMod(modKey, modId, registryId, modName, 'loaded', {loadType, distribution});
       return;
     }
 
     // Skip if no source URL
     if (!sourceUrl) {
       LogService.warn(`ModLoaderService: Mod ${modName} (${modKey}) has no source URL, skipping`);
-      this.trackMod(modKey, modId, registryId, modName, 'error');
+      this.trackMod(modKey, modId, registryId, modName, 'error', {loadType, distribution, error: 'No source URL'});
       return;
     }
 
@@ -134,9 +154,10 @@ export class ModLoaderService {
 
       // Register in FUSAM as loading if available
       this.setFusamStatus(modId, distribution, 'loading');
-      this.trackMod(modKey, modId, registryId, modName, 'loading');
+      this.registerSourceUrl(sourceUrl, modKey);
+      this.trackMod(modKey, modId, registryId, modName, 'loading', {loadType, distribution});
 
-      switch (this.normalizeLoadType(type)) {
+      switch (loadType) {
         case 'module':
           this.injectScriptElement(modId, registryId, sourceUrl, modName, distribution, modKey, 'module');
           break;
@@ -293,6 +314,13 @@ export class ModLoaderService {
     const settled = loaded + errored;
     const total = entries.length;
     const finished = this.loadStarted && !this.waitingForGame && settled === total;
+
+    const startTimes = entries.map(entry => entry.startedAt).filter((t): t is number => t !== undefined);
+    const settleTimes = entries.map(entry => entry.settledAt).filter((t): t is number => t !== undefined);
+    const totalDurationMs = startTimes.length > 0 && settleTimes.length > 0
+      ? Math.max(...settleTimes) - Math.min(...startTimes)
+      : undefined;
+
     return {
       entries,
       total,
@@ -302,6 +330,7 @@ export class ModLoaderService {
       waitingForGame: this.waitingForGame,
       started: this.loadStarted,
       finished,
+      totalDurationMs,
     };
   }
 
@@ -366,7 +395,7 @@ export class ModLoaderService {
       }
 
       const source = await response.text();
-      this.executeInGlobalScope(modId, registryId, source, sourceUrl, modName, distribution);
+      this.executeInGlobalScope(modId, registryId, source, sourceUrl, modName, distribution, modKey);
       this.handleLoadSuccess(modId, distribution, modName, modKey);
     } catch (error) {
       this.handleLoadError(modId, distribution, modName, modKey, error);
@@ -380,6 +409,7 @@ export class ModLoaderService {
     sourceUrl: string,
     modName: string,
     distribution: string,
+    modKey: string,
   ): void {
     const sanitizedSourceUrl = sourceUrl.replace(/[\r\n]/g, '');
     const script = document.createElement('script');
@@ -391,7 +421,14 @@ export class ModLoaderService {
     script.setAttribute('data-mod-name', modName);
     script.setAttribute('data-distribution', distribution);
     script.setAttribute('data-load-type', 'eval');
-    document.head.appendChild(script);
+    // Inline scripts execute synchronously on append; if the source throws, the
+    // global error handler fires during this window and attributes it to this mod.
+    this.executingEvalModKey = modKey;
+    try {
+      document.head.appendChild(script);
+    } finally {
+      this.executingEvalModKey = null;
+    }
   }
 
   private static injectScriptElement(
@@ -432,16 +469,63 @@ export class ModLoaderService {
   }
 
   private static handleLoadSuccess(modId: string, distribution: string, modName: string, modKey: string): void {
-    LogService.info(`ModLoaderService: Successfully loaded mod ${modName}`);
+    // The script's load event fired, but if the mod threw while executing it was
+    // already marked as errored by the runtime error handler — keep that verdict.
+    const existing = this.loadProgress.get(modKey);
+    if (existing && existing.status === 'error') {
+      LogService.warn(`ModLoaderService: Mod ${modName} downloaded but crashed during execution`, {
+        modKey,
+        error: existing.error,
+      });
+      this.setFusamStatus(modId, distribution, 'error');
+      return;
+    }
+
     this.loadedMods.add(modKey);
     this.setFusamStatus(modId, distribution, 'loaded');
     this.updateModStatus(modKey, 'loaded');
+
+    const durationMs = this.loadProgress.get(modKey)?.durationMs;
+    LogService.info(
+      `ModLoaderService: Successfully loaded mod ${modName}${durationMs !== undefined ? ` in ${durationMs}ms` : ''}`,
+      {modKey, durationMs},
+    );
   }
 
   private static handleLoadError(modId: string, distribution: string, modName: string, modKey: string, error: unknown): void {
-    LogService.error(`ModLoaderService: Failed to load mod ${modName}`, error);
+    const message = this.toErrorMessage(error);
+    LogService.error(`ModLoaderService: Failed to load mod ${modName}`, {modKey, error: message});
     this.setFusamStatus(modId, distribution, 'error');
-    this.updateModStatus(modKey, 'error');
+    this.updateModStatus(modKey, 'error', message);
+  }
+
+  /**
+   * Attribute a runtime error (surfaced by the global error handler) to a mod.
+   * A crash before the mod settles flips it to "error"; a crash after it has
+   * already loaded is recorded separately so the loaded verdict is not lost.
+   */
+  private static handleRuntimeError(modKey: string, message: string): void {
+    const entry = this.loadProgress.get(modKey);
+    if (!entry) {
+      return;
+    }
+
+    if (entry.status === 'loaded') {
+      if (entry.postLoadError !== message) {
+        entry.postLoadError = message;
+        LogService.error(`ModLoaderService: Mod ${entry.name} threw after loading`, {modKey, error: message});
+        this.notifyProgress();
+      }
+      return;
+    }
+
+    if (entry.status === 'error') {
+      return;
+    }
+
+    LogService.error(`ModLoaderService: Mod ${entry.name} crashed during load`, {modKey, error: message});
+    this.setFusamStatus(entry.modId, entry.distribution ?? 'unknown', 'error');
+    this.updateModStatus(modKey, 'error', message);
   }
 
   /**
@@ -460,6 +544,8 @@ export class ModLoaderService {
           registryId: mod.registryId,
           name: mod.name,
           status: 'pending',
+          loadType: this.normalizeLoadType(mod.type),
+          distribution: mod.selectedVersion,
         });
         changed = true;
       }
@@ -472,16 +558,36 @@ export class ModLoaderService {
   /**
    * Create or update a progress entry, notifying listeners only on a real change.
    */
-  private static trackMod(modKey: string, modId: string, registryId: string, name: string, status: ModLoadStatus): void {
+  private static trackMod(
+    modKey: string,
+    modId: string,
+    registryId: string,
+    name: string,
+    status: ModLoadStatus,
+    opts?: { loadType?: ModLoadType; distribution?: string; error?: string },
+  ): void {
     const existing = this.loadProgress.get(modKey);
     if (existing) {
       let changed = false;
-      if (existing.status !== status) {
-        existing.status = status;
-        changed = true;
-      }
       if (name && existing.name !== name) {
         existing.name = name;
+        changed = true;
+      }
+      if (opts?.loadType && existing.loadType !== opts.loadType) {
+        existing.loadType = opts.loadType;
+        changed = true;
+      }
+      if (opts?.distribution && existing.distribution !== opts.distribution) {
+        existing.distribution = opts.distribution;
+        changed = true;
+      }
+      if (opts?.error && existing.error !== opts.error) {
+        existing.error = opts.error;
+        changed = true;
+      }
+      if (existing.status !== status) {
+        existing.status = status;
+        this.applyStatusTiming(existing, status);
         changed = true;
       }
       if (changed) {
@@ -489,20 +595,115 @@ export class ModLoaderService {
       }
       return;
     }
-    this.loadProgress.set(modKey, {modKey, modId, registryId, name, status});
+    const entry: ModLoadEntry = {modKey, modId, registryId, name, status};
+    if (opts?.loadType) entry.loadType = opts.loadType;
+    if (opts?.distribution) entry.distribution = opts.distribution;
+    if (opts?.error) entry.error = opts.error;
+    this.applyStatusTiming(entry, status);
+    this.loadProgress.set(modKey, entry);
     this.notifyProgress();
   }
 
   /**
-   * Update the status of an existing progress entry.
+   * Update the status (and optionally the error) of an existing progress entry.
    */
-  private static updateModStatus(modKey: string, status: ModLoadStatus): void {
+  private static updateModStatus(modKey: string, status: ModLoadStatus, error?: string): void {
     const existing = this.loadProgress.get(modKey);
-    if (!existing || existing.status === status) {
+    if (!existing) {
       return;
     }
-    existing.status = status;
-    this.notifyProgress();
+    let changed = false;
+    if (error !== undefined && existing.error !== error) {
+      existing.error = error;
+      changed = true;
+    }
+    if (existing.status !== status) {
+      existing.status = status;
+      this.applyStatusTiming(existing, status);
+      changed = true;
+    }
+    if (changed) {
+      this.notifyProgress();
+    }
+  }
+
+  /**
+   * Stamp start/settle timestamps (and compute the duration) as a mod moves
+   * through its lifecycle. Timestamps are only ever written once.
+   */
+  private static applyStatusTiming(entry: ModLoadEntry, status: ModLoadStatus): void {
+    const now = Date.now();
+    if (status === 'loading' && entry.startedAt === undefined) {
+      entry.startedAt = now;
+    }
+    if ((status === 'loaded' || status === 'error') && entry.settledAt === undefined) {
+      entry.settledAt = now;
+      if (entry.startedAt !== undefined) {
+        entry.durationMs = now - entry.startedAt;
+      }
+    }
+  }
+
+  /**
+   * Remember which mod a script URL belongs to so runtime errors reported with
+   * that filename can be attributed back to the mod.
+   */
+  private static registerSourceUrl(sourceUrl: string, modKey: string): void {
+    try {
+      const absolute = new URL(sourceUrl, location.href).href;
+      this.sourceUrlToModKey.set(absolute, modKey);
+    } catch {
+      this.sourceUrlToModKey.set(sourceUrl, modKey);
+    }
+  }
+
+  /**
+   * Install the global error listener (once) that detects mods crashing during
+   * initialization — script load events alone can't tell a clean load from one
+   * that downloaded but threw.
+   */
+  private static ensureRuntimeErrorListener(): void {
+    if (this.runtimeErrorListenerInstalled) {
+      return;
+    }
+    this.runtimeErrorListenerInstalled = true;
+
+    window.addEventListener('error', (event: ErrorEvent) => {
+      let modKey: string | undefined;
+      if (event.filename) {
+        modKey = this.sourceUrlToModKey.get(event.filename);
+      }
+      // Eval mods run as inline scripts, so the filename won't match; fall back
+      // to whichever eval source is executing synchronously right now.
+      if (!modKey && this.executingEvalModKey) {
+        modKey = this.executingEvalModKey;
+      }
+      if (!modKey) {
+        return;
+      }
+
+      const message = event.message
+        || (event.error instanceof Error ? event.error.message : 'Runtime error');
+      this.handleRuntimeError(modKey, message);
+    }, true);
+  }
+
+  private static toErrorMessage(error: unknown): string {
+    if (error instanceof Error) {
+      return error.message;
+    }
+    if (typeof error === 'string') {
+      return error;
+    }
+    if (error instanceof Event) {
+      // script.onerror passes a generic event with no detail for cross-origin
+      // failures; describe the most likely cause.
+      return 'Failed to load script (network, CORS, or syntax error)';
+    }
+    if (error && typeof error === 'object' && 'message' in error) {
+      return String((error as { message: unknown }).message);
+    }
+    return String(error);
   }
 
   private static notifyProgress(): void {

@@ -32,7 +32,8 @@ export class LoaderVersionService {
   static subscribe(listener: () => void): () => void {
     const state = window.__bmmLoader;
     if (!state) {
-      return () => {};
+      return () => {
+      };
     }
     state.listeners.push(listener);
     return () => {

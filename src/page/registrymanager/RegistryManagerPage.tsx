@@ -365,7 +365,8 @@ export default class RegistryManagerPage extends Component<{}, RegistryManagerSt
                           const cached = cachedData.get(registry.id);
                           if (cached) {
                             return (
-                              <div className="mt-2.5 rounded-lg border border-bmm-border bg-bmm-surface-raised px-3 py-2.5 shadow-bmm-control">
+                              <div
+                                className="mt-2.5 rounded-lg border border-bmm-border bg-bmm-surface-raised px-3 py-2.5 shadow-bmm-control">
                                 <div className="flex items-center gap-4 text-xs flex-wrap">
                                   {cached.error ? (
                                     <span className="font-bold text-red-700">

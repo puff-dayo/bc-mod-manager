@@ -20,7 +20,8 @@ export default function ModalPanel({actions, children, className, footer, subtit
       )}
     >
       {(title || subtitle || actions) && (
-        <div className="flex items-start justify-between gap-4 border-b border-bmm-border bg-bmm-surface-raised px-5 py-4">
+        <div
+          className="flex items-start justify-between gap-4 border-b border-bmm-border bg-bmm-surface-raised px-5 py-4">
           <div>
             {title && <h2 className="m-0 text-xl font-bold leading-tight text-bmm-ink">{title}</h2>}
             {subtitle && <p className="mt-1.5 text-sm leading-6 text-bmm-muted">{subtitle}</p>}
