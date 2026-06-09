@@ -10,7 +10,7 @@ export default function AppBackdrop({children, className, ...props}: AppBackdrop
   return (
     <div
       {...props}
-      className={classNames('fixed inset-0 z-40 flex items-center justify-center bg-slate-900/55 p-4', className)}
+      className={classNames('fixed inset-0 z-40 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-[2px]', className)}
     >
       {children}
     </div>

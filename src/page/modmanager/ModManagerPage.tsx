@@ -264,7 +264,7 @@ export default class ModManagerPage extends Component<{}, ModManagerState> {
                         <img
                           src={mod.addon.icon}
                           alt={modName}
-                          className="h-12 w-12 flex-none rounded-lg border border-slate-200 bg-slate-50 object-cover"
+                          className="h-12 w-12 flex-none rounded-lg border border-bmm-border bg-bmm-surface-muted object-cover shadow-bmm-control"
                           onError={(e) => {
                             (e.target as HTMLImageElement).style.display = 'none';
                           }}
@@ -275,7 +275,7 @@ export default class ModManagerPage extends Component<{}, ModManagerState> {
                       <div className="flex-1 min-w-0">
                         {/* Title Row */}
                         <div className="flex items-center gap-2 mb-1 flex-wrap">
-                          <h3 className="text-[0.96875rem] font-bold leading-snug text-slate-900">{modName}</h3>
+                          <h3 className="text-[0.96875rem] font-bold leading-snug text-bmm-ink">{modName}</h3>
                           {mod.addon.tags && mod.addon.tags.length > 0 && (
                             <div className="flex gap-1 flex-wrap">
                               {mod.addon.tags.slice(0, 3).map(tag => (
@@ -288,14 +288,14 @@ export default class ModManagerPage extends Component<{}, ModManagerState> {
                         </div>
 
                         {/* Author and ID */}
-                        <div className="mb-2 text-[0.8125rem] text-slate-500">
+                        <div className="mb-2 text-[0.8125rem] text-bmm-muted">
                           <span className="font-medium">by {mod.addon.author}</span>
                           <span className="mx-2">•</span>
                           <span>ID: {mod.addon.id}</span>
                         </div>
 
                         {/* Description */}
-                        <p className="mb-3 line-clamp-2 text-sm leading-relaxed text-slate-700">
+                        <p className="mb-3 line-clamp-2 text-sm leading-relaxed text-bmm-muted">
                           {mod.addon.description}
                         </p>
 
@@ -311,7 +311,7 @@ export default class ModManagerPage extends Component<{}, ModManagerState> {
                           {/* Version Selector - Always show if versions available */}
                           {mod.addon.versions.length > 0 && (
                             <div className="flex items-center gap-2">
-                              <span className="text-[0.8125rem] text-slate-500">{i18n('label-selected-version')}:</span>
+                              <span className="text-[0.8125rem] text-bmm-muted">{i18n('label-selected-version')}:</span>
                               <Select
                                 value={selectedVersion}
                                 onChange={(e) => this.handleVersionChange(
@@ -367,16 +367,16 @@ export default class ModManagerPage extends Component<{}, ModManagerState> {
 
                         {/* Expanded Details */}
                         {isExpanded && (
-                          <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-3.5">
+                          <div className="mt-4 rounded-lg border border-bmm-border bg-bmm-surface-raised p-3.5 shadow-bmm-control">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                               {mod.addon.repository && (
                                 <div>
-                                  <span className="font-bold text-slate-800">{i18n('label-repository')}:</span>
+                                  <span className="font-bold text-bmm-ink">{i18n('label-repository')}:</span>
                                   <a
                                     href={mod.addon.repository}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="ml-2 break-all font-semibold text-blue-700 no-underline hover:text-blue-900 hover:underline"
+                                    className="ml-2 break-all font-semibold text-bmm-accent no-underline hover:text-bmm-accent-strong hover:underline"
                                   >
                                     {mod.addon.repository}
                                   </a>
@@ -384,12 +384,12 @@ export default class ModManagerPage extends Component<{}, ModManagerState> {
                               )}
                               {mod.addon.website && (
                                 <div>
-                                  <span className="font-bold text-slate-800">{i18n('label-website')}:</span>
+                                  <span className="font-bold text-bmm-ink">{i18n('label-website')}:</span>
                                   <a
                                     href={mod.addon.website}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="ml-2 break-all font-semibold text-blue-700 no-underline hover:text-blue-900 hover:underline"
+                                    className="ml-2 break-all font-semibold text-bmm-accent no-underline hover:text-bmm-accent-strong hover:underline"
                                   >
                                     {mod.addon.website}
                                   </a>
@@ -397,12 +397,12 @@ export default class ModManagerPage extends Component<{}, ModManagerState> {
                               )}
                               {mod.addon.discord && (
                                 <div>
-                                  <span className="font-bold text-slate-800">{i18n('label-discord')}:</span>
+                                  <span className="font-bold text-bmm-ink">{i18n('label-discord')}:</span>
                                   <a
                                     href={mod.addon.discord}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="ml-2 font-semibold text-blue-700 no-underline hover:text-blue-900 hover:underline"
+                                    className="ml-2 font-semibold text-bmm-accent no-underline hover:text-bmm-accent-strong hover:underline"
                                   >
                                     {i18n('button-join-discord')}
                                   </a>
@@ -410,19 +410,19 @@ export default class ModManagerPage extends Component<{}, ModManagerState> {
                               )}
                               {mod.addon.type && (
                                 <div>
-                                  <span className="font-bold text-slate-800">{i18n('label-type')}:</span>
-                                  <span className="ml-2 text-[0.8125rem] text-slate-500">{mod.addon.type}</span>
+                                  <span className="font-bold text-bmm-ink">{i18n('label-type')}:</span>
+                                  <span className="ml-2 text-[0.8125rem] text-bmm-muted">{mod.addon.type}</span>
                                 </div>
                               )}
                               <div>
-                                <span className="font-bold text-slate-800">{i18n('label-registry')}:</span>
+                                <span className="font-bold text-bmm-ink">{i18n('label-registry')}:</span>
                                 <span
-                                  className="ml-2 break-all text-[0.8125rem] text-slate-500">{mod.registryUrl}</span>
+                                  className="ml-2 break-all text-[0.8125rem] text-bmm-muted">{mod.registryUrl}</span>
                               </div>
                               {mod.addon.versions.length > 0 && (
                                 <div className="md:col-span-2">
                                   <span
-                                    className="font-bold text-slate-800">{i18n('label-available-versions')}:</span>
+                                    className="font-bold text-bmm-ink">{i18n('label-available-versions')}:</span>
                                   <div className="mt-1 flex gap-2 flex-wrap">
                                     {mod.addon.versions.map(v => (
                                       <Badge
@@ -449,7 +449,7 @@ export default class ModManagerPage extends Component<{}, ModManagerState> {
 
         {/* Footer Info */}
         {filteredMods.length > 0 && (
-          <div className="mt-3.5 text-center text-[0.8125rem] text-slate-500">
+          <div className="mt-3.5 text-center text-[0.8125rem] text-bmm-muted">
             {i18n('showing-x-of-y-mods', {x: filteredMods.length, y: totalCount})}
           </div>
         )}

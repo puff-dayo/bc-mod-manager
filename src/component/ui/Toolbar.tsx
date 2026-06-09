@@ -14,7 +14,7 @@ export default function Toolbar({children, className, inline = false, ...props}:
       className={classNames(
         inline
           ? 'flex flex-wrap items-center gap-2.5'
-          : 'mt-4 flex flex-wrap items-center gap-2.5 rounded-lg border border-slate-200 bg-white p-3 first:mt-0',
+          : 'mt-4 flex flex-wrap items-center gap-2.5 rounded-lg border border-bmm-border bg-bmm-surface p-3 shadow-bmm-card first:mt-0',
         className,
       )}
     >

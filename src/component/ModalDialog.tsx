@@ -65,7 +65,7 @@ export default class ModalDialog extends Component<ModalDialogProps, ModalDialog
           />
 
           {/* Prompt */}
-          <div className="mb-4 text-slate-800">
+          <div className="mb-4 text-bmm-ink">
             {typeof modal.prompt === "string" ? (
               <p className="text-base font-semibold leading-6">{modal.prompt}</p>
             ) : (

@@ -176,7 +176,7 @@ export default class LogManagerPage extends Component<{}, LogManagerState> {
           <div className="flex flex-wrap gap-4 items-center">
             {/* Filter */}
             <div className="flex items-center gap-2">
-              <span className="text-[0.8125rem] font-semibold text-slate-500">{i18n('label-filter')}:</span>
+              <span className="text-[0.8125rem] font-semibold text-bmm-muted">{i18n('label-filter')}:</span>
               <Select
                 value={filter}
                 onChange={(e) => this.handleFilterChange((e.target as HTMLSelectElement).value as LogLevel | 'all')}
@@ -208,9 +208,9 @@ export default class LogManagerPage extends Component<{}, LogManagerState> {
                 type="checkbox"
                 checked={autoRefresh}
                 onChange={this.handleAutoRefreshToggle}
-                className="w-4 h-4 accent-blue-600"
+                className="h-4 w-4 accent-bmm-accent"
               />
-              <span className="text-[0.8125rem] font-semibold text-slate-500">{i18n('label-auto-refresh')}</span>
+              <span className="text-[0.8125rem] font-semibold text-bmm-muted">{i18n('label-auto-refresh')}</span>
             </label>
 
             {/* Buttons */}
@@ -254,8 +254,8 @@ export default class LogManagerPage extends Component<{}, LogManagerState> {
 
           {/* Debug Methods Info */}
           {debugMethods.length > 0 && (
-            <div className="mt-4 pt-4 border-t border-slate-200">
-              <div className="text-[0.8125rem] text-slate-500">
+            <div className="mt-4 border-t border-bmm-border pt-4">
+              <div className="text-[0.8125rem] text-bmm-muted">
                 <span
                   className="font-medium">{i18n('label-registered-debug-methods', {count: debugMethods.length.toString()})}:</span>
                 <span className="ml-2">{debugMethods.join(', ')}</span>
@@ -286,10 +286,10 @@ export default class LogManagerPage extends Component<{}, LogManagerState> {
                     {/* Content */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-2">
-                        <div className="flex-1 break-words text-sm leading-relaxed text-slate-700">
+                        <div className="flex-1 break-words text-sm leading-relaxed text-bmm-muted">
                           {log.message}
                         </div>
-                        <div className="whitespace-nowrap text-[0.8125rem] text-slate-500">
+                        <div className="whitespace-nowrap text-[0.8125rem] text-bmm-faint">
                           {this.formatTimestamp(log.timestamp)}
                         </div>
                       </div>
@@ -297,7 +297,7 @@ export default class LogManagerPage extends Component<{}, LogManagerState> {
                       {/* Additional Data */}
                       {log.data && (
                         <div
-                          className="mt-2.5 overflow-x-auto rounded-lg border border-slate-700 bg-slate-900 p-3 font-mono text-xs text-slate-300">
+                          className="mt-2.5 overflow-x-auto rounded-lg border border-slate-800 bg-slate-950 p-3 font-mono text-xs leading-5 text-slate-200 shadow-bmm-control">
                           <pre className="m-0">{JSON.stringify(log.data, null, 2)}</pre>
                         </div>
                       )}

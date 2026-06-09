@@ -10,9 +10,9 @@ interface EmptyStateProps extends Omit<JSX.HTMLAttributes<HTMLDivElement>, 'clas
 
 export default function EmptyState({children, className, description, title, ...props}: EmptyStateProps) {
   return (
-    <div {...props} className={classNames('px-4 py-11 text-center text-slate-500', className)}>
-      <div className="text-base font-bold text-slate-800">{title}</div>
-      {description && <div className="mt-1.5 text-sm">{description}</div>}
+    <div {...props} className={classNames('px-4 py-12 text-center text-bmm-muted', className)}>
+      <div className="text-base font-bold text-bmm-ink">{title}</div>
+      {description && <div className="mt-1.5 text-sm leading-6">{description}</div>}
       {children}
     </div>
   );

@@ -10,7 +10,7 @@ export default function Textarea({className, ...props}: TextareaProps) {
     <textarea
       {...props}
       className={classNames(
-        'min-h-9 w-full resize-y rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-slate-900 transition-[background,border-color] duration-150 placeholder:text-slate-400 focus:border-blue-600 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600/15',
+        'min-h-9 w-full resize-y rounded-lg border border-bmm-border-strong bg-bmm-surface px-3 py-2.5 text-bmm-ink shadow-bmm-control transition-[background,border-color,box-shadow] duration-150 placeholder:text-bmm-faint hover:border-bmm-accent/45 focus:border-bmm-accent focus:bg-white focus:outline-none focus:ring-2 focus:ring-bmm-accent/15',
         className,
       )}
     />

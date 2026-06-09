@@ -17,7 +17,7 @@ export default function Input({className, compact = false, ...props}: InputProps
       {...props}
       className={classNames(
         !hasWidthClass && 'w-full',
-        'rounded-lg border border-slate-300 bg-white text-slate-900 transition-[background,border-color] duration-150 placeholder:text-slate-400 focus:border-blue-600 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600/15',
+        'rounded-lg border border-bmm-border-strong bg-bmm-surface text-bmm-ink shadow-bmm-control transition-[background,border-color,box-shadow] duration-150 placeholder:text-bmm-faint hover:border-bmm-accent/45 focus:border-bmm-accent focus:bg-white focus:outline-none focus:ring-2 focus:ring-bmm-accent/15',
         sizeClass,
         className,
       )}

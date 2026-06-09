@@ -13,11 +13,11 @@ interface PanelProps extends Omit<JSX.HTMLAttributes<HTMLDivElement>, 'class' | 
 export default function Panel({actions, body = false, children, className, list = false, title, ...props}: PanelProps) {
   return (
     <div {...props}
-         className={classNames('mt-4 overflow-hidden rounded-lg border border-slate-200 bg-white first:mt-0', className)}>
+         className={classNames('mt-4 overflow-hidden rounded-lg border border-bmm-border bg-bmm-surface shadow-bmm-card first:mt-0', className)}>
       {(title || actions) && (
         <div
-          className="flex flex-col gap-3 border-b border-slate-200 bg-slate-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-          {title && <h2 className="m-0 text-base font-bold tracking-normal text-slate-900">{title}</h2>}
+          className="flex flex-col gap-3 border-b border-bmm-border bg-bmm-surface-raised px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+          {title && <h2 className="m-0 text-base font-bold tracking-normal text-bmm-ink">{title}</h2>}
           {actions}
         </div>
       )}

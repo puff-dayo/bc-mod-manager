@@ -11,18 +11,18 @@ interface BadgeProps extends Omit<JSX.HTMLAttributes<HTMLSpanElement>, 'class' |
 
 export default function Badge({children, className, variant = 'neutral', ...props}: BadgeProps) {
   const variantClass = {
-    neutral: 'border-slate-200 bg-slate-100 text-slate-800',
-    primary: 'border-blue-200 bg-blue-50 text-blue-800',
-    success: 'border-emerald-200 bg-emerald-50 text-emerald-800',
-    warning: 'border-amber-200 bg-amber-50 text-amber-800',
-    danger: 'border-red-200 bg-red-50 text-red-800',
+    neutral: 'border-bmm-border bg-bmm-surface-muted text-bmm-muted',
+    primary: 'border-blue-200 bg-bmm-accent-soft text-bmm-accent-strong',
+    success: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+    warning: 'border-amber-200 bg-amber-50 text-amber-700',
+    danger: 'border-red-200 bg-red-50 text-red-700',
   }[variant];
 
   return (
     <span
       {...props}
       className={classNames(
-        'inline-flex items-center whitespace-nowrap rounded-full border px-2 py-1 text-[0.71875rem] font-bold leading-none',
+        'inline-flex items-center whitespace-nowrap rounded-full border px-2 py-1 text-[0.71875rem] font-bold leading-none shadow-[0_1px_0_rgb(15_23_42/0.04)]',
         variantClass,
         className,
       )}

@@ -342,16 +342,16 @@ export default class RegistryManagerPage extends Component<{}, RegistryManagerSt
                     </Toolbar>
                   ) : (
                     // View Mode
-                    <div className="flex items-start justify-between gap-4">
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
                           <div
-                            className="break-all text-[0.96875rem] font-bold leading-snug text-slate-900">{registry.url}</div>
+                            className="break-all text-[0.96875rem] font-bold leading-snug text-bmm-ink">{registry.url}</div>
                           <Badge variant={registry.type === 'fusam' ? 'primary' : 'neutral'}>
                             {registry.type}
                           </Badge>
                         </div>
-                        <div className="mt-1 text-[0.8125rem] text-slate-500">
+                        <div className="mt-1 text-[0.8125rem] text-bmm-muted">
                           {i18n('label-added')}: {new Date(registry.createdAt).toLocaleString()}
                           {registry.updatedAt !== registry.createdAt && (
                             <span className="ml-2">
@@ -365,21 +365,21 @@ export default class RegistryManagerPage extends Component<{}, RegistryManagerSt
                           const cached = cachedData.get(registry.id);
                           if (cached) {
                             return (
-                              <div className="mt-2.5 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5">
+                              <div className="mt-2.5 rounded-lg border border-bmm-border bg-bmm-surface-raised px-3 py-2.5 shadow-bmm-control">
                                 <div className="flex items-center gap-4 text-xs flex-wrap">
                                   {cached.error ? (
-                                    <span className="font-bold text-red-800">
+                                    <span className="font-bold text-red-700">
                                       {i18n('label-error')}: {cached.error}
                                     </span>
                                   ) : (
                                     <>
-                                      <span className="font-bold text-emerald-800">
+                                      <span className="font-bold text-emerald-700">
                                         {cached.modCount} {cached.modCount !== 1 ? i18n('label-mods') : i18n('label-mod')}
                                       </span>
-                                      <span className="text-[0.8125rem] text-slate-500">
+                                      <span className="text-[0.8125rem] text-bmm-muted">
                                         {i18n('label-cached')}: {RegistryDataService.formatCacheAge(cached)}
                                       </span>
-                                      <span className="text-[0.8125rem] text-slate-500">
+                                      <span className="text-[0.8125rem] text-bmm-muted">
                                         ({new Date(cached.fetchedAt).toLocaleString()})
                                       </span>
                                     </>
@@ -391,7 +391,7 @@ export default class RegistryManagerPage extends Component<{}, RegistryManagerSt
                           return null;
                         })()}
                       </div>
-                      <div className="flex flex-col gap-2 ml-4">
+                      <div className="flex flex-wrap gap-2 sm:ml-4 sm:flex-col">
                         <Button
                           onClick={() => this.handleFetchRegistry(registry)}
                           disabled={fetchingIds.has(registry.id)}
@@ -440,7 +440,7 @@ export default class RegistryManagerPage extends Component<{}, RegistryManagerSt
 
         {/* Registry Count */}
         {registries.length > 0 && (
-          <div className="mt-3.5 text-center text-[0.8125rem] text-slate-500">
+          <div className="mt-3.5 text-center text-[0.8125rem] text-bmm-muted">
             {i18n('message-total-registries', {count: registries.length.toString()})}
           </div>
         )}

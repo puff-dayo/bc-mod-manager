@@ -8,7 +8,6 @@ import CloseButton from './ui/CloseButton';
 import EmptyState from './ui/EmptyState';
 import Field from './ui/Field';
 import FormGrid from './ui/FormGrid';
-import FormPanel from './ui/FormPanel';
 import Input from './ui/Input';
 import ListRow from './ui/ListRow';
 import ModalBackdrop from './ui/ModalBackdrop';
@@ -199,8 +198,134 @@ export default class CustomExtensionModal extends Component<CustomExtensionModal
     });
   };
 
+  renderFormModal() {
+    const {showAddForm, editingId, formData, error} = this.state;
+
+    if (!showAddForm) {
+      return null;
+    }
+
+    return (
+      <ModalBackdrop className="z-[60]">
+        <ModalPanel
+          title={editingId ? i18n('button-edit') : i18n('title-add-custom-extension')}
+          actions={<CloseButton
+            onClick={this.handleCancel}
+            variant="modal"
+          />}
+          footer={(
+            <div className="flex justify-end gap-2">
+              <Button
+                onClick={this.handleCancel}
+                variant="neutral"
+              >
+                {i18n('button-cancel')}
+              </Button>
+              <Button
+                onClick={this.handleSubmit}
+                variant="primary"
+              >
+                {editingId ? i18n('button-save') : i18n('button-add')}
+              </Button>
+            </div>
+          )}
+        >
+          {error && (
+            <Alert>
+              {error}
+            </Alert>
+          )}
+
+          <FormGrid>
+            <Field label={`${i18n('label-extension-name')} *`}>
+              <Input
+                type="text"
+                value={formData.name}
+                onInput={(e) => this.handleInputChange('name', (e.target as HTMLInputElement).value)}
+                placeholder={i18n('placeholder-extension-name')}
+              />
+            </Field>
+
+            <Field label={i18n('label-extension-author')}>
+              <Input
+                type="text"
+                value={formData.author}
+                onInput={(e) => this.handleInputChange('author', (e.target as HTMLInputElement).value)}
+                placeholder={i18n('placeholder-extension-author')}
+              />
+            </Field>
+
+            <Field label={i18n('label-extension-description')} full>
+              <Textarea
+                value={formData.description}
+                onInput={(e) => this.handleInputChange('description', (e.target as HTMLTextAreaElement).value)}
+                placeholder={i18n('placeholder-extension-description')}
+                rows={3}
+              />
+            </Field>
+
+            <Field label={`${i18n('label-extension-source-url')} *`} full>
+              <Input
+                type="text"
+                value={formData.sourceUrl}
+                onInput={(e) => this.handleInputChange('sourceUrl', (e.target as HTMLInputElement).value)}
+                placeholder={i18n('placeholder-extension-source-url')}
+              />
+            </Field>
+
+            <Field label={i18n('label-extension-type')}>
+              <Select
+                value={formData.type}
+                onChange={(e) => this.handleInputChange('type', (e.target as HTMLSelectElement).value)}
+              >
+                <option value="script">{i18n('option-type-script')}</option>
+                <option value="module">{i18n('option-type-module')}</option>
+              </Select>
+            </Field>
+
+            <Field label={i18n('label-extension-icon-url')}>
+              <Input
+                type="text"
+                value={formData.icon}
+                onInput={(e) => this.handleInputChange('icon', (e.target as HTMLInputElement).value)}
+                placeholder={i18n('placeholder-extension-icon-url')}
+              />
+            </Field>
+
+            <Field label={i18n('label-extension-repository-url')}>
+              <Input
+                type="text"
+                value={formData.repository}
+                onInput={(e) => this.handleInputChange('repository', (e.target as HTMLInputElement).value)}
+                placeholder={i18n('placeholder-extension-repository-url')}
+              />
+            </Field>
+
+            <Field label={i18n('label-extension-website-url')}>
+              <Input
+                type="text"
+                value={formData.website}
+                onInput={(e) => this.handleInputChange('website', (e.target as HTMLInputElement).value)}
+                placeholder={i18n('placeholder-extension-website-url')}
+              />
+            </Field>
+
+            <Field label={i18n('label-extension-tags')} full>
+              <Input
+                type="text"
+                value={formData.tags}
+                onInput={(e) => this.handleInputChange('tags', (e.target as HTMLInputElement).value)}
+                placeholder={i18n('placeholder-extension-tags')}
+              />
+            </Field>
+          </FormGrid>
+        </ModalPanel>
+      </ModalBackdrop>
+    );
+  }
+
   render() {
-    const {extensions, showAddForm, editingId, formData, error, success} = this.state;
+    const {extensions, showAddForm, error, success} = this.state;
 
     return (
       <ModalBackdrop className="z-50">
@@ -220,7 +345,7 @@ export default class CustomExtensionModal extends Component<CustomExtensionModal
           </Button>}
         >
           {/* Messages */}
-          {error && (
+          {error && !showAddForm && (
             <Alert>
               {error}
             </Alert>
@@ -231,124 +356,19 @@ export default class CustomExtensionModal extends Component<CustomExtensionModal
             </Alert>
           )}
 
-          {/* Add/Edit Form */}
-          {showAddForm ? (
-            <FormPanel
-              className="mb-6"
-              title={editingId ? i18n('button-edit') : i18n('title-add-custom-extension')}
-            >
-              <FormGrid>
-                <Field label={`${i18n('label-extension-name')} *`}>
-                  <Input
-                    type="text"
-                    value={formData.name}
-                    onInput={(e) => this.handleInputChange('name', (e.target as HTMLInputElement).value)}
-                    placeholder={i18n('placeholder-extension-name')}
-                  />
-                </Field>
-
-                <Field label={i18n('label-extension-author')}>
-                  <Input
-                    type="text"
-                    value={formData.author}
-                    onInput={(e) => this.handleInputChange('author', (e.target as HTMLInputElement).value)}
-                    placeholder={i18n('placeholder-extension-author')}
-                  />
-                </Field>
-
-                <Field label={i18n('label-extension-description')} full>
-                  <Textarea
-                    value={formData.description}
-                    onInput={(e) => this.handleInputChange('description', (e.target as HTMLTextAreaElement).value)}
-                    placeholder={i18n('placeholder-extension-description')}
-                    rows={3}
-                  />
-                </Field>
-
-                <Field label={`${i18n('label-extension-source-url')} *`} full>
-                  <Input
-                    type="text"
-                    value={formData.sourceUrl}
-                    onInput={(e) => this.handleInputChange('sourceUrl', (e.target as HTMLInputElement).value)}
-                    placeholder={i18n('placeholder-extension-source-url')}
-                  />
-                </Field>
-
-                <Field label={i18n('label-extension-type')}>
-                  <Select
-                    value={formData.type}
-                    onChange={(e) => this.handleInputChange('type', (e.target as HTMLSelectElement).value)}
-                  >
-                    <option value="script">{i18n('option-type-script')}</option>
-                    <option value="module">{i18n('option-type-module')}</option>
-                  </Select>
-                </Field>
-
-                <Field label={i18n('label-extension-icon-url')}>
-                  <Input
-                    type="text"
-                    value={formData.icon}
-                    onInput={(e) => this.handleInputChange('icon', (e.target as HTMLInputElement).value)}
-                    placeholder={i18n('placeholder-extension-icon-url')}
-                  />
-                </Field>
-
-                <Field label={i18n('label-extension-repository-url')}>
-                  <Input
-                    type="text"
-                    value={formData.repository}
-                    onInput={(e) => this.handleInputChange('repository', (e.target as HTMLInputElement).value)}
-                    placeholder={i18n('placeholder-extension-repository-url')}
-                  />
-                </Field>
-
-                <Field label={i18n('label-extension-website-url')}>
-                  <Input
-                    type="text"
-                    value={formData.website}
-                    onInput={(e) => this.handleInputChange('website', (e.target as HTMLInputElement).value)}
-                    placeholder={i18n('placeholder-extension-website-url')}
-                  />
-                </Field>
-
-                <Field label={i18n('label-extension-tags')} full>
-                  <Input
-                    type="text"
-                    value={formData.tags}
-                    onInput={(e) => this.handleInputChange('tags', (e.target as HTMLInputElement).value)}
-                    placeholder={i18n('placeholder-extension-tags')}
-                  />
-                </Field>
-
-                <div className="col-span-full flex gap-2 pt-2">
-                  <Button
-                    onClick={this.handleSubmit}
-                    variant="primary"
-                  >
-                    {editingId ? i18n('button-save') : i18n('button-add')}
-                  </Button>
-                  <Button
-                    onClick={this.handleCancel}
-                    variant="neutral"
-                  >
-                    {i18n('button-cancel')}
-                  </Button>
-                </div>
-              </FormGrid>
-            </FormPanel>
-          ) : (
-            <div className="mb-4">
+          {/* Extensions List */}
+          <Panel
+            list
+            title={`${i18n('label-custom-extensions')} (${extensions.length})`}
+            actions={(
               <Button
                 onClick={this.handleAddNew}
                 variant="primary"
               >
                 + {i18n('button-add-custom-extension')}
               </Button>
-            </div>
-          )}
-
-          {/* Extensions List */}
-          <Panel list title={`${i18n('label-custom-extensions')} (${extensions.length})`}>
+            )}
+          >
             {extensions.length === 0 ? (
               <EmptyState title={i18n('message-no-custom-extensions')}/>
             ) : (
@@ -360,19 +380,19 @@ export default class CustomExtensionModal extends Component<CustomExtensionModal
                         <img
                           src={ext.icon}
                           alt={ext.name}
-                          className="h-10 w-10 flex-none rounded-lg border border-slate-200 bg-slate-50 object-cover"
+                          className="h-10 w-10 flex-none rounded-lg border border-bmm-border bg-bmm-surface-muted object-cover shadow-bmm-control"
                           onError={(e) => {
                             (e.target as HTMLImageElement).style.display = 'none';
                           }}
                         />
                       )}
                       <div className="flex-1 min-w-0">
-                        <h4 className="text-[0.96875rem] font-bold leading-snug text-slate-900">{ext.name}</h4>
-                        <p className="text-[0.8125rem] text-slate-500">by {ext.author}</p>
+                        <h4 className="text-[0.96875rem] font-bold leading-snug text-bmm-ink">{ext.name}</h4>
+                        <p className="text-[0.8125rem] text-bmm-muted">by {ext.author}</p>
                         {ext.description && (
-                          <p className="mt-2 text-sm leading-relaxed text-slate-700">{ext.description}</p>
+                          <p className="mt-2 text-sm leading-relaxed text-bmm-muted">{ext.description}</p>
                         )}
-                        <div className="mt-2 break-all text-[0.8125rem] text-slate-500">
+                        <div className="mt-2 break-all text-[0.8125rem] text-bmm-muted">
                           <span className="font-medium">URL:</span> {ext.sourceUrl}
                         </div>
                         {ext.tags && ext.tags.length > 0 && (
@@ -408,6 +428,7 @@ export default class CustomExtensionModal extends Component<CustomExtensionModal
             )}
           </Panel>
         </ModalPanel>
+        {this.renderFormModal()}
       </ModalBackdrop>
     );
   }
