@@ -1,5 +1,5 @@
 import type {ComponentChildren, JSX} from 'preact';
-import classNames from './classNames';
+import classNames from '@/component/ui/classNames';
 
 export type ButtonVariant = 'primary' | 'neutral' | 'danger' | 'success' | 'ghost';
 export type ButtonSize = 'md' | 'sm';

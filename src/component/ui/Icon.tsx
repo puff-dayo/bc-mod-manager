@@ -1,5 +1,5 @@
 import type {JSX} from 'preact';
-import classNames from './classNames';
+import classNames from '@/component/ui/classNames';
 
 export type IconName = 'refresh' | 'download' | 'delete' | 'chevron';
 

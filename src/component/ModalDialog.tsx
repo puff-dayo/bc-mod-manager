@@ -1,11 +1,11 @@
-import type {ModalState} from "../service/ModalService.ts";
+import type {ModalState} from "@/service/ModalService.ts";
 import {Component} from "preact";
-import Button from "./ui/Button";
-import CloseButton from "./ui/CloseButton";
-import DialogPanel from "./ui/DialogPanel";
-import Input from "./ui/Input";
-import ModalBackdrop from "./ui/ModalBackdrop";
-import Textarea from "./ui/Textarea";
+import Button from "@/component/ui/Button";
+import CloseButton from "@/component/ui/CloseButton";
+import DialogPanel from "@/component/ui/DialogPanel";
+import Input from "@/component/ui/Input";
+import ModalBackdrop from "@/component/ui/ModalBackdrop";
+import Textarea from "@/component/ui/Textarea";
 
 interface ModalDialogProps {
   modal: ModalState;

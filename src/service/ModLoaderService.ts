@@ -1,5 +1,5 @@
-import {ModService} from './ModService';
-import {LogService} from './LogService';
+import {ModService} from '@/service/ModService';
+import {LogService} from '@/service/LogService';
 
 type ModLoadType = 'script' | 'module' | 'eval';
 

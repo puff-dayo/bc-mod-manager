@@ -1,20 +1,20 @@
 import {Component} from 'preact';
-import {type CustomExtension, type CustomExtensionType, CustomExtensionService} from '../service/CustomExtensionService';
-import i18n from '../i18n/i18n';
-import Alert from './ui/Alert';
-import Badge from './ui/Badge';
-import Button from './ui/Button';
-import CloseButton from './ui/CloseButton';
-import EmptyState from './ui/EmptyState';
-import Field from './ui/Field';
-import FormGrid from './ui/FormGrid';
-import Input from './ui/Input';
-import ListRow from './ui/ListRow';
-import ModalBackdrop from './ui/ModalBackdrop';
-import ModalPanel from './ui/ModalPanel';
-import Panel from './ui/Panel';
-import Select from './ui/Select';
-import Textarea from './ui/Textarea';
+import {type CustomExtension, type CustomExtensionType, CustomExtensionService} from '@/service/CustomExtensionService';
+import i18n from '@/i18n/i18n';
+import Alert from '@/component/ui/Alert';
+import Badge from '@/component/ui/Badge';
+import Button from '@/component/ui/Button';
+import CloseButton from '@/component/ui/CloseButton';
+import EmptyState from '@/component/ui/EmptyState';
+import Field from '@/component/ui/Field';
+import FormGrid from '@/component/ui/FormGrid';
+import Input from '@/component/ui/Input';
+import ListRow from '@/component/ui/ListRow';
+import ModalBackdrop from '@/component/ui/ModalBackdrop';
+import ModalPanel from '@/component/ui/ModalPanel';
+import Panel from '@/component/ui/Panel';
+import Select from '@/component/ui/Select';
+import Textarea from '@/component/ui/Textarea';
 
 interface CustomExtensionModalProps {
   onClose: () => void;

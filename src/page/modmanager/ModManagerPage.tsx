@@ -1,23 +1,23 @@
 import {Component} from "preact";
-import {type ModConfig, ModService} from "../../service/ModService";
-import {type FusamAddon} from "../../service/RegistryDataService";
-import i18n, {currentLanguage} from "../../i18n/i18n.ts";
-import CustomExtensionModal from "../../component/CustomExtensionModal";
-import Alert from "../../component/ui/Alert";
-import Badge, {type BadgeVariant} from "../../component/ui/Badge";
-import Button from "../../component/ui/Button";
-import EmptyState from "../../component/ui/EmptyState";
-import Icon from "../../component/ui/Icon";
-import Input from "../../component/ui/Input";
-import List from "../../component/ui/List";
-import ListRow from "../../component/ui/ListRow";
-import Page from "../../component/ui/Page";
-import PageHeader from "../../component/ui/PageHeader";
-import Select from "../../component/ui/Select";
-import StatCard from "../../component/ui/StatCard";
-import StatsGrid from "../../component/ui/StatsGrid";
-import Toolbar from "../../component/ui/Toolbar";
-import ToolbarPrimary from "../../component/ui/ToolbarPrimary";
+import {type ModConfig, ModService} from "@/service/ModService";
+import {type FusamAddon} from "@/service/RegistryDataService";
+import i18n, {currentLanguage} from "@/i18n/i18n.ts";
+import CustomExtensionModal from "@/component/CustomExtensionModal";
+import Alert from "@/component/ui/Alert";
+import Badge, {type BadgeVariant} from "@/component/ui/Badge";
+import Button from "@/component/ui/Button";
+import EmptyState from "@/component/ui/EmptyState";
+import Icon from "@/component/ui/Icon";
+import Input from "@/component/ui/Input";
+import List from "@/component/ui/List";
+import ListRow from "@/component/ui/ListRow";
+import Page from "@/component/ui/Page";
+import PageHeader from "@/component/ui/PageHeader";
+import Select from "@/component/ui/Select";
+import StatCard from "@/component/ui/StatCard";
+import StatsGrid from "@/component/ui/StatsGrid";
+import Toolbar from "@/component/ui/Toolbar";
+import ToolbarPrimary from "@/component/ui/ToolbarPrimary";
 
 interface ModManagerState {
   availableMods: Array<{

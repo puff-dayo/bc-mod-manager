@@ -1,7 +1,7 @@
-import {LocalStorageService} from './LocalStorageService';
-import {type CachedRegistryData, type FusamAddon, RegistryDataService} from './RegistryDataService';
-import {ModLoaderService} from './ModLoaderService';
-import {CustomExtensionService} from './CustomExtensionService';
+import {LocalStorageService} from '@/service/LocalStorageService';
+import {type CachedRegistryData, type FusamAddon, RegistryDataService} from '@/service/RegistryDataService';
+import {ModLoaderService} from '@/service/ModLoaderService';
+import {CustomExtensionService} from '@/service/CustomExtensionService';
 
 /**
  * Mod Configuration

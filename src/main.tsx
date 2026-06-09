@@ -1,13 +1,13 @@
 import {render} from 'preact'
-import './index.css'
-import './fusam.ts'
-import './bcmodsdk.js'
-import App from './app.tsx'
-import {LogService} from "./service/LogService.ts";
-import {ModService} from "./service/ModService.ts";
-import {RegistryService} from "./service/RegistryService.ts";
-import {RegistryDataService} from "./service/RegistryDataService.ts";
-import {ModLoaderService} from "./service/ModLoaderService.ts";
+import '@/index.css'
+import '@/fusam.ts'
+import '@/bcmodsdk.js'
+import App from '@/app.tsx'
+import {LogService} from "@/service/LogService.ts";
+import {ModService} from "@/service/ModService.ts";
+import {RegistryService} from "@/service/RegistryService.ts";
+import {RegistryDataService} from "@/service/RegistryDataService.ts";
+import {ModLoaderService} from "@/service/ModLoaderService.ts";
 
 LogService.info('BC Mod Manager started');
 

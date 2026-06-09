@@ -1,20 +1,20 @@
 import {Component} from "preact";
-import {type Registry, RegistryService, type RegistryType} from "../../service/RegistryService";
-import {type CachedRegistryData, RegistryDataService} from "../../service/RegistryDataService";
-import i18n from "../../i18n/i18n";
-import Alert from "../../component/ui/Alert";
-import Badge from "../../component/ui/Badge";
-import Button from "../../component/ui/Button";
-import EmptyState from "../../component/ui/EmptyState";
-import Icon from "../../component/ui/Icon";
-import Input from "../../component/ui/Input";
-import ListRow from "../../component/ui/ListRow";
-import Page from "../../component/ui/Page";
-import PageHeader from "../../component/ui/PageHeader";
-import Panel from "../../component/ui/Panel";
-import Select from "../../component/ui/Select";
-import Toolbar from "../../component/ui/Toolbar";
-import ToolbarPrimary from "../../component/ui/ToolbarPrimary";
+import {type Registry, RegistryService, type RegistryType} from "@/service/RegistryService";
+import {type CachedRegistryData, RegistryDataService} from "@/service/RegistryDataService";
+import i18n from "@/i18n/i18n";
+import Alert from "@/component/ui/Alert";
+import Badge from "@/component/ui/Badge";
+import Button from "@/component/ui/Button";
+import EmptyState from "@/component/ui/EmptyState";
+import Icon from "@/component/ui/Icon";
+import Input from "@/component/ui/Input";
+import ListRow from "@/component/ui/ListRow";
+import Page from "@/component/ui/Page";
+import PageHeader from "@/component/ui/PageHeader";
+import Panel from "@/component/ui/Panel";
+import Select from "@/component/ui/Select";
+import Toolbar from "@/component/ui/Toolbar";
+import ToolbarPrimary from "@/component/ui/ToolbarPrimary";
 
 interface RegistryManagerState {
   registries: Registry[];

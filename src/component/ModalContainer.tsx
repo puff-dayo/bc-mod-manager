@@ -1,6 +1,6 @@
 import {Component} from "preact";
-import {ModalService, type ModalState} from "../service/ModalService";
-import ModalDialog from "./ModalDialog.tsx";
+import {ModalService, type ModalState} from "@/service/ModalService";
+import ModalDialog from "@/component/ModalDialog.tsx";
 
 interface ModalContainerState {
   modals: ModalState[];

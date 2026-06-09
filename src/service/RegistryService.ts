@@ -1,6 +1,6 @@
-import {LocalStorageService} from './LocalStorageService';
-import {LogService} from "./LogService.ts";
-import {RegistryDataService} from "./RegistryDataService.ts";
+import {LocalStorageService} from '@/service/LocalStorageService';
+import {LogService} from "@/service/LogService.ts";
+import {RegistryDataService} from "@/service/RegistryDataService.ts";
 
 /**
  * Registry type options

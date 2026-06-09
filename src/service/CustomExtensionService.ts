@@ -1,5 +1,5 @@
-import {LocalStorageService} from './LocalStorageService';
-import {LogService} from './LogService';
+import {LocalStorageService} from '@/service/LocalStorageService';
+import {LogService} from '@/service/LogService';
 
 export type CustomExtensionType = 'script' | 'module' | 'eval';
 

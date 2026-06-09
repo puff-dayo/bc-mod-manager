@@ -1,6 +1,6 @@
 import type {JSX} from 'preact';
-import classNames from './classNames';
-import i18n from '../../i18n/i18n';
+import classNames from '@/component/ui/classNames';
+import i18n from '@/i18n/i18n';
 
 type CloseButtonVariant = 'app' | 'dialog' | 'modal';
 

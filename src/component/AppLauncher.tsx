@@ -1,5 +1,5 @@
 import type {ComponentChildren} from 'preact';
-import classNames from './ui/classNames';
+import classNames from '@/component/ui/classNames';
 
 export interface AppLauncherItem {
   id: string;

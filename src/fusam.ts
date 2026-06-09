@@ -1,5 +1,5 @@
-import {LogService} from "./service/LogService.ts";
-import {ModalService} from "./service/ModalService.ts";
+import {LogService} from "@/service/LogService.ts";
+import {ModalService} from "@/service/ModalService.ts";
 
 window.FUSAM = {
   present: true,

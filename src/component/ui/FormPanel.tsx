@@ -1,5 +1,5 @@
 import type {ComponentChildren, JSX} from 'preact';
-import classNames from './classNames';
+import classNames from '@/component/ui/classNames';
 
 interface FormPanelProps extends Omit<JSX.HTMLAttributes<HTMLDivElement>, 'class' | 'className' | 'title'> {
   children: ComponentChildren;

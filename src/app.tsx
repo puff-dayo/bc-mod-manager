@@ -1,15 +1,15 @@
-import './app.css'
+import '@/app.css'
 import {Component} from "preact";
-import i18n from "./i18n/i18n.ts";
-import RegistryManagerPage from "./page/registrymanager/RegistryManagerPage.tsx";
-import ModManagerPage from "./page/modmanager/ModManagerPage.tsx";
-import LogManagerPage from "./page/logmanager/LogManagerPage.tsx";
-import ModalContainer from "./component/ModalContainer.tsx";
-import {ModLoaderService} from "./service/ModLoaderService.ts";
-import AppLauncher, {type AppLauncherItem} from "./component/AppLauncher.tsx";
-import AppBackdrop from "./component/ui/AppBackdrop.tsx";
-import AppShell from "./component/ui/AppShell.tsx";
-import CloseButton from "./component/ui/CloseButton.tsx";
+import i18n from "@/i18n/i18n.ts";
+import RegistryManagerPage from "@/page/registrymanager/RegistryManagerPage.tsx";
+import ModManagerPage from "@/page/modmanager/ModManagerPage.tsx";
+import LogManagerPage from "@/page/logmanager/LogManagerPage.tsx";
+import ModalContainer from "@/component/ModalContainer.tsx";
+import {ModLoaderService} from "@/service/ModLoaderService.ts";
+import AppLauncher, {type AppLauncherItem} from "@/component/AppLauncher.tsx";
+import AppBackdrop from "@/component/ui/AppBackdrop.tsx";
+import AppShell from "@/component/ui/AppShell.tsx";
+import CloseButton from "@/component/ui/CloseButton.tsx";
 
 type PageType = 'mod-manager' | 'registry-manager' | 'log-viewer' | 'modal-test' | null;
 

@@ -1,5 +1,5 @@
 import type {JSX} from 'preact';
-import classNames from './classNames';
+import classNames from '@/component/ui/classNames';
 
 interface InputProps extends Omit<JSX.InputHTMLAttributes<HTMLInputElement>, 'class' | 'className'> {
   className?: string;

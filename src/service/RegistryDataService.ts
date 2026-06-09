@@ -1,6 +1,6 @@
-import {LocalStorageService} from './LocalStorageService';
-import type {Registry, RegistryType} from './RegistryService';
-import {LogService} from "./LogService.ts";
+import {LocalStorageService} from '@/service/LocalStorageService';
+import type {Registry, RegistryType} from '@/service/RegistryService';
+import {LogService} from "@/service/LogService.ts";
 
 /**
  * Fusam Registry Data Structure

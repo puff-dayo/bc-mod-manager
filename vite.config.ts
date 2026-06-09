@@ -2,6 +2,7 @@ import { defineConfig } from 'vite'
 import preact from '@preact/preset-vite'
 import tailwindcss from '@tailwindcss/vite'
 import cssInjectedByJsPlugin from "vite-plugin-css-injected-by-js"
+import {fileURLToPath, URL} from "node:url";
 
 // https://vite.dev/config/
 const bmmInitialization = `
@@ -88,6 +89,12 @@ export default defineConfig({
       }
     },
   ],
+  base: './',
+  resolve: {
+    alias: {
+      '@': fileURLToPath(new URL('./src', import.meta.url)),
+    },
+  },
   build: {
     modulePreload: false,
     sourcemap: 'hidden',

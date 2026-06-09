@@ -1,5 +1,5 @@
 import type {JSX} from 'preact';
-import classNames from './classNames';
+import classNames from '@/component/ui/classNames';
 
 interface SelectProps extends Omit<JSX.SelectHTMLAttributes<HTMLSelectElement>, 'class' | 'className'> {
   className?: string;

@@ -1,19 +1,19 @@
 import {Component} from "preact";
-import {type LogEntry, type LogLevel, LogService} from "../../service/LogService";
-import i18n from "../../i18n/i18n";
-import Badge, {type BadgeVariant} from "../../component/ui/Badge";
-import Button from "../../component/ui/Button";
-import EmptyState from "../../component/ui/EmptyState";
-import Icon from "../../component/ui/Icon";
-import Input from "../../component/ui/Input";
-import ListRow from "../../component/ui/ListRow";
-import Page from "../../component/ui/Page";
-import PageHeader from "../../component/ui/PageHeader";
-import Panel from "../../component/ui/Panel";
-import Select from "../../component/ui/Select";
-import StatCard from "../../component/ui/StatCard";
-import StatsGrid from "../../component/ui/StatsGrid";
-import Toolbar from "../../component/ui/Toolbar";
+import {type LogEntry, type LogLevel, LogService} from "@/service/LogService";
+import i18n from "@/i18n/i18n";
+import Badge, {type BadgeVariant} from "@/component/ui/Badge";
+import Button from "@/component/ui/Button";
+import EmptyState from "@/component/ui/EmptyState";
+import Icon from "@/component/ui/Icon";
+import Input from "@/component/ui/Input";
+import ListRow from "@/component/ui/ListRow";
+import Page from "@/component/ui/Page";
+import PageHeader from "@/component/ui/PageHeader";
+import Panel from "@/component/ui/Panel";
+import Select from "@/component/ui/Select";
+import StatCard from "@/component/ui/StatCard";
+import StatsGrid from "@/component/ui/StatsGrid";
+import Toolbar from "@/component/ui/Toolbar";
 
 interface LogManagerState {
   logs: LogEntry[];

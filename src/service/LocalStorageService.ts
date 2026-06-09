@@ -1,4 +1,4 @@
-import {LogService} from "./LogService.ts";
+import {LogService} from "@/service/LogService.ts";
 
 /**
  * LocalStorageService - Handles all localStorage operations
