@@ -1,6 +1,6 @@
---- a/errors.ts
-+++ b/errors.ts
-@@ -1,6 +1,8 @@
+--- a/errors.ts	2026-06-10 20:58:16
++++ b/errors.ts	2026-06-11 03:08:10
+@@ -1,5 +1,7 @@
 +import { showSdkAlert } from '@/service/SdkUiService';
 +
  export function ThrowError(error: string): never {
@@ -9,11 +9,8 @@
  	const err = new Error(error);
  	console.error(err);
  	throw err;
--}
-+}
-\ No newline at end of file
---- a/sdkApi.ts
-+++ b/sdkApi.ts
+--- a/sdkApi.ts	2026-06-10 20:56:39
++++ b/sdkApi.ts	2026-06-11 03:08:10
 @@ -5,6 +5,13 @@
  export let sdkApi: ModSDKGlobalAPI;
  export const API_VERSION: number = 1;
@@ -28,7 +25,7 @@
  export function CreateGlobalAPI(): ModSDKGlobalAPI {
  	const result: ModSDKGlobalAPI = {
  		version: VERSION,
-@@ -19,7 +26,8 @@
+@@ -19,6 +26,7 @@
  		}),
  	};
  
@@ -36,19 +33,66 @@
  	sdkApi = result;
  
  	return Object.freeze(result);
--}
-+}
-\ No newline at end of file
---- a/index.ts
-+++ b/index.ts
-@@ -1,20 +1,45 @@
+--- a/index.ts	2026-06-10 20:58:16
++++ b/index.ts	2026-06-11 03:07:21
+@@ -1,20 +1,99 @@
  import { ThrowError } from './errors';
  import type { ModSDKGlobalAPI } from './api';
 -import { API_VERSION, CreateGlobalAPI } from './sdkApi';
 +import { API_VERSION, CreateGlobalAPI, isOurSdkInstance } from './sdkApi';
  import { IsObject } from './utils';
-+import { showSdkAlert, notifySdkHijacked } from '@/service/SdkUiService';
++import { showSdkAlert, notifySdkHijacked, reportSdkCrash } from '@/service/SdkUiService';
  
++type _CrashFrame = { type: 'hook' | 'patch'; fn: string; mod: string };
++
++function _installCrashReporter(api: ModSDKGlobalAPI): void {
++	const contextStack: _CrashFrame[] = [];
++
++	// hookEnter is called before each mod hook runs; the returned onExit is called
++	// on clean return. If onExit is never called (crash), the frame stays on the stack
++	// and window.onerror can attribute the error to the right mod.
++	api.errorReporterHooks.hookEnter = (fn: string, mod: string): (() => void) => {
++		const frame: _CrashFrame = { type: 'hook', fn, mod };
++		contextStack.push(frame);
++		return () => {
++			const idx = contextStack.lastIndexOf(frame);
++			if (idx >= 0) contextStack.splice(idx, 1);
++		};
++	};
++
++	// hookChainExit is called before the patched BC function itself runs.
++	api.errorReporterHooks.hookChainExit = (fn: string, patchMods: ReadonlySet<string>): (() => void) => {
++		const frame: _CrashFrame = {
++			type: 'patch',
++			fn,
++			mod: Array.from(patchMods).join(', ') || '(unknown)',
++		};
++		contextStack.push(frame);
++		return () => {
++			const idx = contextStack.lastIndexOf(frame);
++			if (idx >= 0) contextStack.splice(idx, 1);
++		};
++	};
++
++	// Synchronous errors thrown by mod hooks propagate up through the SDK call
++	// stack and reach the global handler when they escape BC's call site.
++	window.addEventListener('error', (event: ErrorEvent) => {
++		if (contextStack.length === 0) return;
++		const frame = contextStack[contextStack.length - 1];
++		reportSdkCrash(frame.type, frame.fn, frame.mod, event.error ?? event);
++		// Synchronous unwind clears the whole stack.
++		contextStack.length = 0;
++	}, true);
++
++	// Async mod hooks that reject without being caught.
++	window.addEventListener('unhandledrejection', (event: PromiseRejectionEvent) => {
++		if (contextStack.length === 0) return;
++		const frame = contextStack[contextStack.length - 1];
++		reportSdkCrash(frame.type, frame.fn, frame.mod, event.reason);
++		contextStack.length = 0;
++	});
++}
++
  function Init(): ModSDKGlobalAPI {
 +	// Clear the no-op setter placed by bmm.user.js at document-start so that
 +	// BC's synchronous bcmodsdk.min.js init was silently discarded and we own
@@ -59,7 +103,10 @@
 +	}
 +
  	if (typeof window.bcModSdk === 'undefined') {
- 		return window.bcModSdk = CreateGlobalAPI();
+-		return window.bcModSdk = CreateGlobalAPI();
++		const api = CreateGlobalAPI();
++		_installCrashReporter(api);
++		return window.bcModSdk = api;
  	}
  	if (!IsObject(window.bcModSdk)) {
  		ThrowError('Failed to init Mod SDK: Name already in use');
@@ -72,7 +119,9 @@
 +			: [];
 +		if (modsInfo.length === 0) {
 +			// No mods registered yet — safe to take over.
-+			return window.bcModSdk = CreateGlobalAPI();
++			const api = CreateGlobalAPI();
++			_installCrashReporter(api);
++			return window.bcModSdk = api;
 +		}
 +		// Mods already hold references into BC's SDK state; replacing would break them.
 +		notifySdkHijacked(modsInfo);
@@ -89,69 +138,3 @@
  			`Mod SDK warning: Loading different but compatible versions ('${VERSION}' vs '${window.bcModSdk.version}')\n` +
  			'One of mods you are using is using an old version of SDK. It will work for now but please inform author to update',
  		);
-@@ -38,4 +63,4 @@
- /** @public */
- export default bcModSdk;
- 
--export * from './api';
-+export * from './api';
-\ No newline at end of file
---- a/patching.ts
-+++ b/patching.ts
-@@ -5,6 +5,8 @@
- import { registeredMods } from './modRegistry';
- import { sdkApi } from './sdkApi';
- import { ArrayUnique, CRC32, IsObject } from './utils';
-+import { reportSdkCrash } from '@/service/SdkUiService';
-+import { showSdkAlert } from '@/service/SdkUiService';
- 
- export interface IHookData {
- 	readonly mod: string;
-@@ -94,9 +96,15 @@
- 
- 	let next: (this: any, nextargs: any[]) => any = function (args) {
- 		const onExit = sdkApi.errorReporterHooks.hookChainExit?.(data.name, patchesSources);
--		const resExit = final.apply(this, args);
--		onExit?.();
--		return resExit;
-+		try {
-+			const resExit = final.apply(this, args);
-+			onExit?.();
-+			return resExit;
-+		} catch (err) {
-+			const modList = Array.from(patchesSources).join(', ') || '(unknown)';
-+			reportSdkCrash('patch', data.name, modList, err);
-+			throw err;
-+		}
- 	};
- 
- 	for (let i = hooks.length - 1; i >= 0; i--) {
-@@ -105,14 +113,20 @@
- 
- 		next = function (args) {
- 			const onExit = sdkApi.errorReporterHooks.hookEnter?.(data.name, hook.mod);
--			const resIntermediate = hook.hook.apply(this, [args, (nextargs) => {
--				if (arguments.length !== 1 || !Array.isArray(args)) {
--					throw new Error(`Mod ${hook.mod} failed to call next hook: Expected args to be array, got ${typeof nextargs}`);
--				}
--				return nextHook.call(this, nextargs);
--			}]);
--			onExit?.();
--			return resIntermediate;
-+			try {
-+				const resIntermediate = hook.hook.apply(this, [args, (nextargs) => {
-+					if (arguments.length !== 1 || !Array.isArray(args)) {
-+						throw new Error(`Mod ${hook.mod} failed to call next hook: Expected args to be array, got ${typeof nextargs}`);
-+					}
-+					return nextHook.call(this, nextargs);
-+				}]);
-+				onExit?.();
-+				return resIntermediate;
-+			} catch (err) {
-+				onExit?.();
-+				reportSdkCrash('hook', data.name, hook.mod, err);
-+				throw err;
-+			}
- 		};
- 	}
- 
