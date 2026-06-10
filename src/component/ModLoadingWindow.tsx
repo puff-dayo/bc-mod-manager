@@ -4,6 +4,7 @@ import classNames from "@/component/ui/classNames.ts";
 import Icon from "@/component/ui/Icon.tsx";
 import {ModLoaderService, type ModLoadProgress, type ModLoadStatus} from "@/service/ModLoaderService.ts";
 import {LoaderVersionService} from "@/service/LoaderVersionService.ts";
+import {ModCacheService} from "@/service/ModCacheService.ts";
 import {formatDuration} from "@/component/ui/format.ts";
 
 // Auto-dismiss the window shortly after loading finishes (unless the build is
@@ -14,7 +15,9 @@ const SAFETY_HIDE_DELAY = 60000;
 
 interface ModLoadingWindowState {
   progress: ModLoadProgress;
-  outdated: boolean;
+  outdated: boolean;          // the mod-loader build itself is stale
+  modsOutdated: boolean;      // one or more cached mods are stale
+  modsOutdatedCount: number;
   dismissed: boolean;
 }
 
@@ -39,6 +42,7 @@ const STATUS_LABEL_KEY: Record<ModLoadStatus, string> = {
 export default class ModLoadingWindow extends Component<{}, ModLoadingWindowState> {
   private unsubscribeProgress?: () => void;
   private unsubscribeVersion?: () => void;
+  private unsubscribeModCache?: () => void;
   private hideTimer: number | null = null;
   private safetyTimer: number | null = null;
 
@@ -47,6 +51,8 @@ export default class ModLoadingWindow extends Component<{}, ModLoadingWindowStat
     this.state = {
       progress: ModLoaderService.getProgress(),
       outdated: LoaderVersionService.isOutdated(),
+      modsOutdated: ModCacheService.isAnyOutdated(),
+      modsOutdatedCount: ModCacheService.getOutdatedCount(),
       dismissed: false,
     };
   }
@@ -69,11 +75,24 @@ export default class ModLoadingWindow extends Component<{}, ModLoadingWindowStat
       }
     });
 
+    this.unsubscribeModCache = ModCacheService.subscribe(() => {
+      const modsOutdated = ModCacheService.isAnyOutdated();
+      const modsOutdatedCount = ModCacheService.getOutdatedCount();
+      if (modsOutdated) {
+        // Bring the window back so a stale mod detected after the initial load
+        // still reaches the user.
+        this.clearHideTimer();
+        this.setState({modsOutdated, modsOutdatedCount, dismissed: false});
+      } else {
+        this.setState({modsOutdated, modsOutdatedCount});
+      }
+    });
+
     this.scheduleAutoHide(this.state.progress.finished);
 
     this.safetyTimer = window.setTimeout(() => {
       this.safetyTimer = null;
-      if (!LoaderVersionService.isOutdated()) {
+      if (!this.anyOutdated()) {
         this.setState({dismissed: true});
       }
     }, SAFETY_HIDE_DELAY);
@@ -82,6 +101,7 @@ export default class ModLoadingWindow extends Component<{}, ModLoadingWindowStat
   componentWillUnmount() {
     this.unsubscribeProgress?.();
     this.unsubscribeVersion?.();
+    this.unsubscribeModCache?.();
     this.clearHideTimer();
     if (this.safetyTimer !== null) {
       clearTimeout(this.safetyTimer);
@@ -89,19 +109,23 @@ export default class ModLoadingWindow extends Component<{}, ModLoadingWindowStat
     }
   }
 
+  private anyOutdated(): boolean {
+    return LoaderVersionService.isOutdated() || ModCacheService.isAnyOutdated();
+  }
+
   render() {
-    const {progress, outdated, dismissed} = this.state;
+    const {progress, outdated, modsOutdated, modsOutdatedCount, dismissed} = this.state;
     if (dismissed) {
       return null;
     }
-    // Nothing worth showing: no mods to load and the build is current.
-    if (progress.total === 0 && !outdated) {
+    // Nothing worth showing: no mods to load and everything is current.
+    if (progress.total === 0 && !outdated && !modsOutdated) {
       return null;
     }
 
     const percent = progress.total > 0
       ? Math.round((progress.settled / progress.total) * 100)
-      : (outdated ? 100 : 0);
+      : (outdated || modsOutdated ? 100 : 0);
 
     return (
       <div className="fixed bottom-6 right-6 z-[60] w-[20rem] max-w-[calc(100vw-3rem)]">
@@ -129,6 +153,23 @@ export default class ModLoadingWindow extends Component<{}, ModLoadingWindowStat
               <div className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5">
                 <p className="m-0 text-[0.8125rem] font-bold text-amber-800">{i18n('loading-outdated-title')}</p>
                 <p className="m-0 mt-1 text-xs leading-5 text-amber-700">{i18n('loading-outdated-detail')}</p>
+                <button
+                  type="button"
+                  onClick={this.handleReload}
+                  className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-amber-300 bg-white px-2.5 py-1.5 text-xs font-bold text-amber-800 transition-colors hover:bg-amber-100"
+                >
+                  <Icon name="refresh"/>
+                  {i18n('loading-button-reload')}
+                </button>
+              </div>
+            )}
+
+            {modsOutdated && (
+              <div className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5">
+                <p className="m-0 text-[0.8125rem] font-bold text-amber-800">{i18n('loading-mods-outdated-title')}</p>
+                <p className="m-0 mt-1 text-xs leading-5 text-amber-700">
+                  {i18n('loading-mods-outdated-detail', {count: modsOutdatedCount})}
+                </p>
                 <button
                   type="button"
                   onClick={this.handleReload}
@@ -193,7 +234,7 @@ export default class ModLoadingWindow extends Component<{}, ModLoadingWindowStat
   }
 
   private scheduleAutoHide(finished: boolean) {
-    if (finished && this.hideTimer === null && !LoaderVersionService.isOutdated()) {
+    if (finished && this.hideTimer === null && !this.anyOutdated()) {
       this.hideTimer = window.setTimeout(() => {
         this.hideTimer = null;
         this.setState({dismissed: true});
@@ -218,12 +259,18 @@ export default class ModLoadingWindow extends Component<{}, ModLoadingWindowStat
   };
 
   private statusText(): string {
-    const {progress, outdated} = this.state;
+    const {progress, outdated, modsOutdated} = this.state;
     if (progress.waitingForGame) {
       return i18n('loading-waiting-game');
     }
     if (progress.total === 0) {
-      return outdated ? i18n('loading-outdated-title') : i18n('loading-complete');
+      if (outdated) {
+        return i18n('loading-outdated-title');
+      }
+      if (modsOutdated) {
+        return i18n('loading-mods-outdated-title');
+      }
+      return i18n('loading-complete');
     }
     if (progress.finished) {
       const base = progress.errored > 0

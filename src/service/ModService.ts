@@ -30,6 +30,7 @@ export interface ModWithDetails extends ModConfig {
   icon?: string;
   website?: string;
   discord?: string;
+  noCacheBusting?: boolean;          // Author opted out of cache busting (load URL verbatim)
   availableVersions: string[];      // List of available distributions
   sourceUrl?: string;               // URL to the selected version's source
 }
@@ -185,6 +186,9 @@ export class ModService {
             icon: addon.icon,
             website: addon.website,
             discord: addon.discord,
+            // Custom (local/dev) extensions opt out of cache pinning so they
+            // always load the freshest source while being developed.
+            noCacheBusting: true,
             availableVersions: availableVersions,
             sourceUrl: selectedVersionData?.source,
           });
@@ -217,6 +221,7 @@ export class ModService {
             icon: addon.icon,
             website: addon.website,
             discord: addon.discord,
+            noCacheBusting: addon.noCacheBusting,
             availableVersions: availableVersions,
             sourceUrl: selectedVersionData?.source,
           });

@@ -2,6 +2,7 @@
   "button-mod-manager": "Mod Manager",
   "button-registry-manager": "Registry Manager",
   "button-log-viewer": "Log Viewer",
+  "button-settings": "Settings",
   "button-close": "Close",
   "title-mod-manager": "Mod Manager",
   "label-total-mods": "Total Mods",
@@ -138,5 +139,13 @@
   "label-post-load-error": "Post-load error",
   "loading-outdated-title": "Mod loader update available",
   "loading-outdated-detail": "An older cached version is running. Reload the page to update to the latest version.",
-  "loading-button-reload": "Reload page"
+  "loading-mods-outdated-title": "Mod updates available",
+  "loading-mods-outdated-detail": "{count} cached mod(s) are running an older version. Reload the page to update.",
+  "loading-button-reload": "Reload page",
+  "title-settings": "Settings",
+  "subtitle-settings": "Configure how the mod manager loads and updates mods.",
+  "settings-section-loading": "Mod Loading",
+  "settings-mod-cache-label": "Cached mod loading",
+  "settings-mod-cache-description": "Load mods from the browser cache for faster startup, and prompt you to reload when a newer version is detected. When off, mods are fetched fresh on every visit.",
+  "settings-note-reload": "Changes take effect the next time the page is reloaded."
 }

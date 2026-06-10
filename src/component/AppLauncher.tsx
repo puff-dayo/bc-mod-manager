@@ -35,7 +35,7 @@ export default function AppLauncher({items, onToggle, open, title}: AppLauncherP
         className={classNames(
           'mt-2.5 flex origin-top-right flex-col items-end gap-2 overflow-hidden transition-[max-height,opacity,transform] duration-200',
           open
-            ? 'pointer-events-auto max-h-40 translate-y-0 opacity-100'
+            ? 'pointer-events-auto max-h-80 translate-y-0 opacity-100'
             : 'pointer-events-none max-h-0 -translate-y-2 opacity-0',
         )}
       >

@@ -1,5 +1,7 @@
 import {ModService} from '@/service/ModService';
 import {LogService} from '@/service/LogService';
+import {ModCacheService} from '@/service/ModCacheService';
+import {SettingsService} from '@/service/SettingsService';
 
 type ModLoadType = 'script' | 'module' | 'eval';
 
@@ -131,7 +133,7 @@ export class ModLoaderService {
   /**
    * Load a single mod by injecting its script into the page
    */
-  static loadMod(modId: string, type: string, registryId: string, sourceUrl: string | undefined, modName: string, distribution: string = 'unknown'): void {
+  static loadMod(modId: string, type: string, registryId: string, sourceUrl: string | undefined, modName: string, distribution: string = 'unknown', noCacheBusting: boolean = false): void {
     const modKey = `${modId}_${registryId}`;
     const loadType = this.normalizeLoadType(type);
 
@@ -150,31 +152,73 @@ export class ModLoaderService {
     }
 
     try {
-      LogService.info(`ModLoaderService: Loading mod ${modName} from ${sourceUrl}`);
+      // Decide which URL to request: the pinned (cached) build, a fresh fetch,
+      // or the verbatim URL for mods that opt out of cache busting.
+      const plan = ModCacheService.planLoad(sourceUrl, SettingsService.get('modCacheEnabled'), noCacheBusting);
+      const loadUrl = plan.url;
+      LogService.info(`ModLoaderService: Loading mod ${modName} from ${loadUrl}`);
 
       // Register in FUSAM as loading if available
       this.setFusamStatus(modId, distribution, 'loading');
-      this.registerSourceUrl(sourceUrl, modKey);
       this.trackMod(modKey, modId, registryId, modName, 'loading', {loadType, distribution});
 
-      switch (loadType) {
-        case 'module':
-          this.injectScriptElement(modId, registryId, sourceUrl, modName, distribution, modKey, 'module');
-          break;
-        case 'eval':
-          this.loadEvalScript(modId, registryId, sourceUrl, modName, distribution, modKey);
-          break;
-        case 'script':
-        default:
-          this.injectScriptElement(modId, registryId, sourceUrl, modName, distribution, modKey, 'script');
-          break;
+      if (plan.cached) {
+        ModCacheService.beginLoad(modKey, sourceUrl);
+      }
+
+      // If a pinned (cached) build fails to load, drop the pin and retry the
+      // canonical URL once so a bad cache entry can never permanently break a mod.
+      const usedPin = plan.cached && ModCacheService.hasPin(modKey);
+      const onError = usedPin
+        ? () => {
+            LogService.warn(`ModLoaderService: Pinned build of ${modName} failed to load, retrying canonical URL`, {modKey});
+            ModCacheService.clearPin(modKey, sourceUrl);
+            this.registerSourceUrl(sourceUrl, modKey);
+            this.dispatchLoad(modId, registryId, modKey, modName, distribution, loadType, sourceUrl, sourceUrl);
+          }
+        : undefined;
+
+      this.registerSourceUrl(loadUrl, modKey);
+      this.dispatchLoad(modId, registryId, modKey, modName, distribution, loadType, loadUrl, sourceUrl, onError);
+
+      if (plan.cached) {
+        ModCacheService.scheduleValidate(modKey, sourceUrl);
       }
     } catch (error) {
       this.handleLoadError(modId, distribution, modName, modKey, error);
     }
   }
 
-  static preloadMod(modId: string, type: string | undefined, registryId: string, sourceUrl: string | undefined, modName: string, distribution: string = 'unknown'): void {
+  /**
+   * Inject a mod via the appropriate strategy for its load type. Extracted so a
+   * failed cached load can be retried against the canonical URL.
+   */
+  private static dispatchLoad(
+    modId: string,
+    registryId: string,
+    modKey: string,
+    modName: string,
+    distribution: string,
+    loadType: ModLoadType,
+    loadUrl: string,
+    sourceUrl: string,
+    onError?: (error: unknown) => void,
+  ): void {
+    switch (loadType) {
+      case 'module':
+        this.injectScriptElement(modId, registryId, loadUrl, modName, distribution, modKey, 'module', onError);
+        break;
+      case 'eval':
+        void this.loadEvalScript(modId, registryId, loadUrl, sourceUrl, modName, distribution, modKey, onError);
+        break;
+      case 'script':
+      default:
+        this.injectScriptElement(modId, registryId, loadUrl, modName, distribution, modKey, 'script', onError);
+        break;
+    }
+  }
+
+  static preloadMod(modId: string, type: string | undefined, registryId: string, sourceUrl: string | undefined, modName: string, distribution: string = 'unknown', noCacheBusting: boolean = false): void {
     const modKey = `${modId}_${registryId}`;
 
     // Skip if already loaded
@@ -190,7 +234,10 @@ export class ModLoaderService {
     }
 
     try {
-      LogService.info(`ModLoaderService: Preloading mod ${modName} from ${sourceUrl}`);
+      // Resolve the same URL loadMod will request so the preload actually warms
+      // the cache entry the eventual load uses.
+      const {url: preloadUrl} = ModCacheService.planLoad(sourceUrl, SettingsService.get('modCacheEnabled'), noCacheBusting);
+      LogService.info(`ModLoaderService: Preloading mod ${modName} from ${preloadUrl}`);
       const link = document.createElement('link');
       switch (this.normalizeLoadType(type)) {
         case 'module':
@@ -207,7 +254,7 @@ export class ModLoaderService {
           link.as = 'script';
           break;
       }
-      link.href = sourceUrl;
+      link.href = preloadUrl;
       link.setAttribute('data-mod-id', modId);
       link.setAttribute('data-registry-id', registryId);
       link.setAttribute('data-mod-name', modName);
@@ -357,7 +404,7 @@ export class ModLoaderService {
     const modsWithDetails = ModService.getAllModsWithDetails();
     const enabledMods = modsWithDetails.filter(mod => mod.enabled && (mod.type === 'module' || mod.type === 'eval'));
     enabledMods.forEach(mod => {
-      this.preloadMod(mod.modId, mod.type, mod.registryId, mod.sourceUrl, mod.name, mod.selectedVersion);
+      this.preloadMod(mod.modId, mod.type, mod.registryId, mod.sourceUrl, mod.name, mod.selectedVersion, mod.noCacheBusting);
     });
     LogService.info(`ModLoaderService: Preloaded ${enabledMods.length} enabled mods`);
   }
@@ -369,7 +416,7 @@ export class ModLoaderService {
     LogService.info(`ModLoaderService: Loading ${enabledMods.length} enabled mods`);
 
     enabledMods.forEach(mod => {
-      this.loadMod(mod.modId, mod.type || 'script', mod.registryId, mod.sourceUrl, mod.name, mod.selectedVersion);
+      this.loadMod(mod.modId, mod.type || 'script', mod.registryId, mod.sourceUrl, mod.name, mod.selectedVersion, mod.noCacheBusting);
     });
   }
 
@@ -383,22 +430,30 @@ export class ModLoaderService {
   private static async loadEvalScript(
     modId: string,
     registryId: string,
+    loadUrl: string,
     sourceUrl: string,
     modName: string,
     distribution: string,
     modKey: string,
+    onError?: (error: unknown) => void,
   ): Promise<void> {
     try {
-      const response = await fetch(sourceUrl);
+      const response = await fetch(loadUrl);
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
       const source = await response.text();
+      // Use the canonical source URL for the sourceURL comment so stack traces
+      // stay readable even when the body was fetched from a ?v= cache URL.
       this.executeInGlobalScope(modId, registryId, source, sourceUrl, modName, distribution, modKey);
       this.handleLoadSuccess(modId, distribution, modName, modKey);
     } catch (error) {
-      this.handleLoadError(modId, distribution, modName, modKey, error);
+      if (onError) {
+        onError(error);
+      } else {
+        this.handleLoadError(modId, distribution, modName, modKey, error);
+      }
     }
   }
 
@@ -434,15 +489,16 @@ export class ModLoaderService {
   private static injectScriptElement(
     modId: string,
     registryId: string,
-    sourceUrl: string,
+    loadUrl: string,
     modName: string,
     distribution: string,
     modKey: string,
     type: Exclude<ModLoadType, 'eval'>,
+    onError?: (error: unknown) => void,
   ): void {
     // Create script element
     const script = document.createElement('script');
-    script.src = sourceUrl;
+    script.src = loadUrl;
     script.type = type === 'module' ? 'module' : 'text/javascript';
     script.async = true;
     script.crossOrigin = "anonymous";
@@ -459,7 +515,11 @@ export class ModLoaderService {
 
     // Add error event listener
     script.onerror = (error) => {
-      this.handleLoadError(modId, distribution, modName, modKey, error);
+      if (onError) {
+        onError(error);
+      } else {
+        this.handleLoadError(modId, distribution, modName, modKey, error);
+      }
     };
 
     // Inject script into body
@@ -495,6 +555,8 @@ export class ModLoaderService {
   private static handleLoadError(modId: string, distribution: string, modName: string, modKey: string, error: unknown): void {
     const message = this.toErrorMessage(error);
     LogService.error(`ModLoaderService: Failed to load mod ${modName}`, {modKey, error: message});
+    // A mod that never loaded must not surface an "update available" prompt.
+    ModCacheService.clearRuntime(modKey);
     this.setFusamStatus(modId, distribution, 'error');
     this.updateModStatus(modKey, 'error', message);
   }
