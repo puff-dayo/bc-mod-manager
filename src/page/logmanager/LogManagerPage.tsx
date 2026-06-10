@@ -1,6 +1,7 @@
 import {Component} from "preact";
 import {type LogEntry, type LogLevel, LogService} from "@/service/LogService";
 import i18n from "@/i18n/i18n";
+import {formatData} from "@/component/ui/format";
 import Badge, {type BadgeVariant} from "@/component/ui/Badge";
 import Button from "@/component/ui/Button";
 import EmptyState from "@/component/ui/EmptyState";
@@ -286,10 +287,11 @@ export default class LogManagerPage extends Component<{}, LogManagerState> {
                     {/* Content */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-2">
-                        <div className="flex-1 break-words text-sm leading-relaxed text-bmm-muted">
+                        <div className="flex-1 whitespace-pre-wrap break-words text-sm leading-relaxed text-bmm-muted">
                           {log.message}
                         </div>
-                        <div className="whitespace-nowrap text-[0.8125rem] text-bmm-faint">
+                        <div
+                          className="flex shrink-0 items-center gap-2 whitespace-nowrap text-[0.8125rem] text-bmm-faint">
                           {this.formatTimestamp(log.timestamp)}
                         </div>
                       </div>
@@ -298,7 +300,7 @@ export default class LogManagerPage extends Component<{}, LogManagerState> {
                       {log.data && (
                         <div
                           className="mt-2.5 overflow-x-auto rounded-lg border border-slate-800 bg-slate-950 p-3 font-mono text-xs leading-5 text-slate-200 shadow-bmm-control">
-                          <pre className="m-0">{JSON.stringify(log.data, null, 2)}</pre>
+                          <pre className="m-0">{formatData(log.data)}</pre>
                         </div>
                       )}
                     </div>

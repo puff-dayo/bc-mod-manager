@@ -3,7 +3,7 @@ import {type ModConfig, ModService} from "@/service/ModService";
 import {type FusamAddon} from "@/service/RegistryDataService";
 import {type ModLoadEntry, ModLoaderService, type ModLoadStatus} from "@/service/ModLoaderService";
 import i18n, {currentLanguage} from "@/i18n/i18n.ts";
-import {formatDuration} from "@/component/ui/format";
+import {formatDuration, formatInitial, formatLocalizedName, formatSearchText} from "@/component/ui/format";
 import CustomExtensionModal from "@/component/CustomExtensionModal";
 import Alert from "@/component/ui/Alert";
 import Badge, {type BadgeVariant} from "@/component/ui/Badge";
@@ -194,15 +194,22 @@ export default class ModManagerPage extends Component<{}, ModManagerState> {
     // Apply search filter
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(m =>
-        (typeof m.addon.name == 'string'
-          ? m.addon.name.toLowerCase().includes(query)
-          : m.addon.name['en']?.includes(query)) ||
-        m.addon.description.toLowerCase().includes(query) ||
-        m.addon.author.toLowerCase().includes(query) ||
-        m.addon.id.toLowerCase().includes(query) ||
-        m.addon.tags?.some(tag => tag.toLowerCase().includes(query))
-      );
+      filtered = filtered.filter(m => {
+        const localizedNames = typeof m.addon.name === 'string'
+          ? [m.addon.name]
+          : Object.values(m.addon.name);
+        const searchableText = formatSearchText([
+          ...localizedNames,
+          m.addon.description,
+          m.addon.author,
+          m.addon.id,
+          m.registryUrl,
+          ...(m.addon.tags || []),
+          ...m.addon.versions.map(version => version.distribution),
+        ]);
+
+        return searchableText.includes(query);
+      });
     }
 
     return filtered;
@@ -245,7 +252,7 @@ export default class ModManagerPage extends Component<{}, ModManagerState> {
     const failedCount = loadEntries.filter(entry => entry.status === 'error').length;
 
     return (
-      <Page size="wide">
+      <Page size="xl">
         <PageHeader
           title={i18n('title-mod-manager')}
           actions={<Button
@@ -311,9 +318,8 @@ export default class ModManagerPage extends Component<{}, ModManagerState> {
               {filteredMods.map((mod) => {
                 const isEnabled = mod.config?.enabled || false;
                 const uniqueId = `${mod.addon.id}_${mod.registryId}`;
-                const modName = typeof mod.addon.name === 'string'
-                  ? mod.addon.name
-                  : (mod.addon.name[currentLanguage().toLowerCase()] || mod.addon.name['en'] || 'Unknown Mod');
+                const modName = formatLocalizedName(mod.addon.name, currentLanguage());
+                const modInitial = formatInitial(modName);
 
                 // Get selected version: from config if installed, from pendingVersions if not, or default
                 const selectedVersion = isEnabled
@@ -325,83 +331,98 @@ export default class ModManagerPage extends Component<{}, ModManagerState> {
                 return (
                   <ListRow key={uniqueId}>
                     {/* Mod Header */}
-                    <div className="flex items-start gap-4">
-                      {/* Icon */}
-                      {mod.addon.icon && (
-                        <img
-                          src={mod.addon.icon}
-                          alt={modName}
-                          className="h-12 w-12 flex-none rounded-lg border border-bmm-border bg-bmm-surface-muted object-cover shadow-bmm-control"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).style.display = 'none';
-                          }}
-                        />
-                      )}
-
-                      {/* Main Content */}
-                      <div className="flex-1 min-w-0">
-                        {/* Title Row */}
-                        <div className="flex items-center gap-2 mb-1 flex-wrap">
-                          <h3 className="text-[0.96875rem] font-bold leading-snug text-bmm-ink">{modName}</h3>
-                          {mod.addon.tags && mod.addon.tags.length > 0 && (
-                            <div className="flex gap-1 flex-wrap">
-                              {mod.addon.tags.slice(0, 3).map(tag => (
-                                <Badge key={tag}>
-                                  {tag}
-                                </Badge>
-                              ))}
-                            </div>
-                          )}
+                    <div
+                      className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(17.5rem,19.5rem)] lg:items-start">
+                      <div className="flex min-w-0 items-start gap-3.5">
+                        <div
+                          className="flex h-12 w-12 flex-none items-center justify-center overflow-hidden rounded-lg border border-bmm-border bg-bmm-surface-muted text-sm font-bold text-bmm-muted shadow-bmm-control"
+                          aria-hidden={mod.addon.icon ? undefined : 'true'}
+                        >
+                          {mod.addon.icon ? (
+                            <img
+                              src={mod.addon.icon}
+                              alt={modName}
+                              className="h-full w-full object-cover"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).style.display = 'none';
+                              }}
+                            />
+                          ) : modInitial}
                         </div>
 
-                        {/* Author and ID */}
-                        <div className="mb-2 text-[0.8125rem] text-bmm-muted">
-                          <span className="font-medium">by {mod.addon.author}</span>
-                          <span className="mx-2">•</span>
-                          <span>ID: {mod.addon.id}</span>
+                        {/* Main Content */}
+                        <div className="min-w-0 flex-1">
+                          {/* Title Row */}
+                          <div className="mb-1.5 flex min-w-0 flex-wrap items-center gap-2">
+                            <h3 className="min-w-0 text-[0.96875rem] font-bold leading-snug text-bmm-ink">
+                              {modName}
+                            </h3>
+                            {mod.addon.tags && mod.addon.tags.length > 0 && (
+                              <div className="flex min-w-0 flex-wrap gap-1">
+                                {mod.addon.tags.slice(0, 3).map(tag => (
+                                  <Badge key={tag} className="max-w-[9rem] overflow-hidden text-ellipsis">
+                                    {tag}
+                                  </Badge>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Author and ID */}
+                          <div className="mb-2 flex flex-wrap gap-x-2 gap-y-1 text-[0.8125rem] text-bmm-muted">
+                            <span className="min-w-0 font-medium">by {mod.addon.author}</span>
+                            <span className="text-bmm-faint">•</span>
+                            <span className="min-w-0 break-all">ID: {mod.addon.id}</span>
+                          </div>
+
+                          {/* Description */}
+                          <p className="m-0 line-clamp-2 text-sm leading-relaxed text-bmm-muted">
+                            {mod.addon.description}
+                          </p>
                         </div>
+                      </div>
 
-                        {/* Description */}
-                        <p className="mb-3 line-clamp-2 text-sm leading-relaxed text-bmm-muted">
-                          {mod.addon.description}
-                        </p>
-
-                        {/* Controls Row */}
-                        <div className="flex items-center gap-4 flex-wrap">
-                          {/* Status Badge */}
+                      <div className="flex min-w-0 flex-col gap-3 lg:items-stretch">
+                        <div className="flex flex-wrap items-center gap-1.5 lg:justify-end">
                           {isEnabled && (
                             <Badge variant="success">
                               {i18n('label-installed')}
                             </Badge>
                           )}
-
-                          {/* Actual Load Status */}
                           {isEnabled && this.renderLoadBadge(uniqueId)}
-
-                          {/* Version Selector - Always show if versions available */}
-                          {mod.addon.versions.length > 0 && (
-                            <div className="flex items-center gap-2">
-                              <span className="text-[0.8125rem] text-bmm-muted">{i18n('label-selected-version')}:</span>
-                              <Select
-                                value={selectedVersion}
-                                onChange={(e) => this.handleVersionChange(
-                                  mod.addon.id,
-                                  mod.registryId,
-                                  (e.target as HTMLSelectElement).value,
-                                  isEnabled
-                                )}
-                                compact
-                              >
-                                {mod.addon.versions.map(v => (
-                                  <option key={v.distribution} value={v.distribution}>
-                                    {v.distribution}
-                                  </option>
-                                ))}
-                              </Select>
-                            </div>
+                          {!isEnabled && (
+                            <Badge variant="neutral">
+                              {i18n('filter-disabled-only')}
+                            </Badge>
                           )}
+                        </div>
 
-                          {/* Expand/Collapse Button */}
+                        {mod.addon.versions.length > 0 && (
+                          <label className="flex min-w-0 flex-wrap items-center gap-2 lg:justify-end">
+                            <span className="whitespace-nowrap text-[0.8125rem] font-semibold text-bmm-muted">
+                              {i18n('label-selected-version')}:
+                            </span>
+                            <Select
+                              value={selectedVersion}
+                              onChange={(e) => this.handleVersionChange(
+                                mod.addon.id,
+                                mod.registryId,
+                                (e.target as HTMLSelectElement).value,
+                                isEnabled
+                              )}
+                              compact
+                              className="w-auto max-w-full sm:max-w-[12rem]"
+                            >
+                              {mod.addon.versions.map(v => (
+                                <option key={v.distribution} value={v.distribution}>
+                                  {v.distribution}
+                                </option>
+                              ))}
+                            </Select>
+                          </label>
+                        )}
+
+                        <div className="flex flex-wrap items-center gap-2 lg:justify-end">
                           <Button
                             onClick={() => this.toggleExpanded(uniqueId)}
                             variant="ghost"
@@ -410,130 +431,126 @@ export default class ModManagerPage extends Component<{}, ModManagerState> {
                           >
                             {isExpanded ? i18n('button-less') : i18n('button-more')}
                           </Button>
+                          {isEnabled ? (
+                            <Button
+                              onClick={() => this.handleRemoveMod(mod.addon.id, mod.registryId)}
+                              variant="danger"
+                              size="sm"
+                              title="Remove this mod"
+                            >
+                              {i18n('button-remove-mod')}
+                            </Button>
+                          ) : (
+                            <Button
+                              onClick={() => this.handleInstallMod(mod.addon.id, mod.registryId)}
+                              variant="primary"
+                              size="sm"
+                              title="Install this mod"
+                            >
+                              {i18n('button-install-mod')}
+                            </Button>
+                          )}
+                        </div>
+                      </div>
 
-                          {/* Install/Remove Button */}
-                          <div className="ml-auto">
-                            {isEnabled ? (
-                              <Button
-                                onClick={() => this.handleRemoveMod(mod.addon.id, mod.registryId)}
-                                variant="danger"
-                                size="sm"
-                                title="Remove this mod"
-                              >
-                                {i18n('button-remove-mod')}
-                              </Button>
-                            ) : (
-                              <Button
-                                onClick={() => this.handleInstallMod(mod.addon.id, mod.registryId)}
-                                variant="primary"
-                                size="sm"
-                                title="Install this mod"
-                              >
-                                {i18n('button-install-mod')}
-                              </Button>
+                      {/* Expanded Details */}
+                      {isExpanded && (
+                        <div
+                          className="rounded-lg border border-bmm-border bg-bmm-surface-raised p-3.5 shadow-bmm-control lg:col-span-2">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                            {mod.addon.repository && (
+                              <div>
+                                <span className="font-bold text-bmm-ink">{i18n('label-repository')}:</span>
+                                <a
+                                  href={mod.addon.repository}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="ml-2 break-all font-semibold text-bmm-accent no-underline hover:text-bmm-accent-strong hover:underline"
+                                >
+                                  {mod.addon.repository}
+                                </a>
+                              </div>
+                            )}
+                            {mod.addon.website && (
+                              <div>
+                                <span className="font-bold text-bmm-ink">{i18n('label-website')}:</span>
+                                <a
+                                  href={mod.addon.website}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="ml-2 break-all font-semibold text-bmm-accent no-underline hover:text-bmm-accent-strong hover:underline"
+                                >
+                                  {mod.addon.website}
+                                </a>
+                              </div>
+                            )}
+                            {mod.addon.discord && (
+                              <div>
+                                <span className="font-bold text-bmm-ink">{i18n('label-discord')}:</span>
+                                <a
+                                  href={mod.addon.discord}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="ml-2 font-semibold text-bmm-accent no-underline hover:text-bmm-accent-strong hover:underline"
+                                >
+                                  {i18n('button-join-discord')}
+                                </a>
+                              </div>
+                            )}
+                            {mod.addon.type && (
+                              <div>
+                                <span className="font-bold text-bmm-ink">{i18n('label-type')}:</span>
+                                <span className="ml-2 text-[0.8125rem] text-bmm-muted">{mod.addon.type}</span>
+                              </div>
+                            )}
+                            {isEnabled && (() => {
+                              const loadEntry = this.state.loadStatus.get(uniqueId);
+                              return (
+                                <div className="md:col-span-2">
+                                  <span className="font-bold text-bmm-ink">{i18n('label-load-status')}:</span>
+                                  <span className="ml-2 inline-flex items-center gap-2 align-middle">
+                                    {this.renderLoadBadge(uniqueId)}
+                                    {loadEntry?.loadType && (
+                                      <span className="text-[0.8125rem] text-bmm-muted">{loadEntry.loadType}</span>
+                                    )}
+                                  </span>
+                                  {loadEntry?.status === 'error' && loadEntry.error && (
+                                    <p className="m-0 mt-1.5 break-words text-[0.8125rem] leading-5 text-red-600">
+                                      {loadEntry.error}
+                                    </p>
+                                  )}
+                                  {loadEntry?.postLoadError && (
+                                    <p className="m-0 mt-1.5 break-words text-[0.8125rem] leading-5 text-amber-700">
+                                      {i18n('label-post-load-error')}: {loadEntry.postLoadError}
+                                    </p>
+                                  )}
+                                </div>
+                              );
+                            })()}
+                            <div>
+                              <span className="font-bold text-bmm-ink">{i18n('label-registry')}:</span>
+                              <span
+                                className="ml-2 break-all text-[0.8125rem] text-bmm-muted">{mod.registryUrl}</span>
+                            </div>
+                            {mod.addon.versions.length > 0 && (
+                              <div className="md:col-span-2">
+                                <span
+                                    className="font-bold text-bmm-ink">{i18n('label-available-versions')}:</span>
+                                <div className="mt-1 flex gap-2 flex-wrap">
+                                  {mod.addon.versions.map(v => (
+                                    <Badge
+                                      key={v.distribution}
+                                      variant={(v.distribution === selectedVersion ? 'primary' : 'neutral') as BadgeVariant}
+                                    >
+                                      {v.distribution}
+                                    </Badge>
+                                  ))}
+                                </div>
+                              </div>
                             )}
                           </div>
                         </div>
-
-                        {/* Expanded Details */}
-                        {isExpanded && (
-                          <div
-                            className="mt-4 rounded-lg border border-bmm-border bg-bmm-surface-raised p-3.5 shadow-bmm-control">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                              {mod.addon.repository && (
-                                <div>
-                                  <span className="font-bold text-bmm-ink">{i18n('label-repository')}:</span>
-                                  <a
-                                    href={mod.addon.repository}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="ml-2 break-all font-semibold text-bmm-accent no-underline hover:text-bmm-accent-strong hover:underline"
-                                  >
-                                    {mod.addon.repository}
-                                  </a>
-                                </div>
-                              )}
-                              {mod.addon.website && (
-                                <div>
-                                  <span className="font-bold text-bmm-ink">{i18n('label-website')}:</span>
-                                  <a
-                                    href={mod.addon.website}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="ml-2 break-all font-semibold text-bmm-accent no-underline hover:text-bmm-accent-strong hover:underline"
-                                  >
-                                    {mod.addon.website}
-                                  </a>
-                                </div>
-                              )}
-                              {mod.addon.discord && (
-                                <div>
-                                  <span className="font-bold text-bmm-ink">{i18n('label-discord')}:</span>
-                                  <a
-                                    href={mod.addon.discord}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="ml-2 font-semibold text-bmm-accent no-underline hover:text-bmm-accent-strong hover:underline"
-                                  >
-                                    {i18n('button-join-discord')}
-                                  </a>
-                                </div>
-                              )}
-                              {mod.addon.type && (
-                                <div>
-                                  <span className="font-bold text-bmm-ink">{i18n('label-type')}:</span>
-                                  <span className="ml-2 text-[0.8125rem] text-bmm-muted">{mod.addon.type}</span>
-                                </div>
-                              )}
-                              {isEnabled && (() => {
-                                const loadEntry = this.state.loadStatus.get(uniqueId);
-                                return (
-                                  <div className="md:col-span-2">
-                                    <span className="font-bold text-bmm-ink">{i18n('label-load-status')}:</span>
-                                    <span className="ml-2 inline-flex items-center gap-2 align-middle">
-                                      {this.renderLoadBadge(uniqueId)}
-                                      {loadEntry?.loadType && (
-                                        <span className="text-[0.8125rem] text-bmm-muted">{loadEntry.loadType}</span>
-                                      )}
-                                    </span>
-                                    {loadEntry?.status === 'error' && loadEntry.error && (
-                                      <p className="m-0 mt-1.5 break-words text-[0.8125rem] leading-5 text-red-600">
-                                        {loadEntry.error}
-                                      </p>
-                                    )}
-                                    {loadEntry?.postLoadError && (
-                                      <p className="m-0 mt-1.5 break-words text-[0.8125rem] leading-5 text-amber-700">
-                                        {i18n('label-post-load-error')}: {loadEntry.postLoadError}
-                                      </p>
-                                    )}
-                                  </div>
-                                );
-                              })()}
-                              <div>
-                                <span className="font-bold text-bmm-ink">{i18n('label-registry')}:</span>
-                                <span
-                                  className="ml-2 break-all text-[0.8125rem] text-bmm-muted">{mod.registryUrl}</span>
-                              </div>
-                              {mod.addon.versions.length > 0 && (
-                                <div className="md:col-span-2">
-                                  <span
-                                    className="font-bold text-bmm-ink">{i18n('label-available-versions')}:</span>
-                                  <div className="mt-1 flex gap-2 flex-wrap">
-                                    {mod.addon.versions.map(v => (
-                                      <Badge
-                                        key={v.distribution}
-                                        variant={(v.distribution === selectedVersion ? 'primary' : 'neutral') as BadgeVariant}
-                                      >
-                                        {v.distribution}
-                                      </Badge>
-                                    ))}
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        )}
-                      </div>
+                      )}
                     </div>
                   </ListRow>
                 );
