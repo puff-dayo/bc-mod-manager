@@ -5,6 +5,7 @@ import Icon from "@/component/ui/Icon.tsx";
 import {ModLoaderService} from "@/service/ModLoaderService.ts";
 import {ModCacheService} from "@/service/ModCacheService.ts";
 import {LoaderVersion} from "@/infrastructure/bridge/LoaderVersion";
+import {SdkStateService} from "@/service/SdkStateService.ts";
 import type {ModLoadProgress, ModLoadStatus} from "@/domain/ModLoad";
 import {formatDuration} from "@/component/ui/format.ts";
 
@@ -19,6 +20,8 @@ interface ModLoadingWindowState {
   outdated: boolean;          // the mod-loader build itself is stale
   modsOutdated: boolean;      // one or more cached mods are stale
   modsOutdatedCount: number;
+  sdkHijacked: boolean;       // BC's SDK initialized before ours with mods already registered
+  sdkHijackedCount: number;
   dismissed: boolean;
 }
 
@@ -44,6 +47,7 @@ export default class ModLoadingWindow extends Component<{}, ModLoadingWindowStat
   private unsubscribeProgress?: () => void;
   private unsubscribeVersion?: () => void;
   private unsubscribeModCache?: () => void;
+  private unsubscribeSdkState?: () => void;
   private hideTimer: number | null = null;
   private safetyTimer: number | null = null;
 
@@ -54,6 +58,8 @@ export default class ModLoadingWindow extends Component<{}, ModLoadingWindowStat
       outdated: LoaderVersion.isOutdated(),
       modsOutdated: ModCacheService.isAnyOutdated(),
       modsOutdatedCount: ModCacheService.getOutdatedCount(),
+      sdkHijacked: SdkStateService.isHijacked(),
+      sdkHijackedCount: SdkStateService.getHijackInfo()?.registeredMods.length ?? 0,
       dismissed: false,
     };
   }
@@ -89,6 +95,13 @@ export default class ModLoadingWindow extends Component<{}, ModLoadingWindowStat
       }
     });
 
+    this.unsubscribeSdkState = SdkStateService.subscribe(info => {
+      if (info) {
+        this.clearHideTimer();
+        this.setState({sdkHijacked: true, sdkHijackedCount: info.registeredMods.length, dismissed: false});
+      }
+    });
+
     this.scheduleAutoHide(this.state.progress.finished);
 
     this.safetyTimer = window.setTimeout(() => {
@@ -103,6 +116,7 @@ export default class ModLoadingWindow extends Component<{}, ModLoadingWindowStat
     this.unsubscribeProgress?.();
     this.unsubscribeVersion?.();
     this.unsubscribeModCache?.();
+    this.unsubscribeSdkState?.();
     this.clearHideTimer();
     if (this.safetyTimer !== null) {
       clearTimeout(this.safetyTimer);
@@ -111,16 +125,16 @@ export default class ModLoadingWindow extends Component<{}, ModLoadingWindowStat
   }
 
   private anyOutdated(): boolean {
-    return LoaderVersion.isOutdated() || ModCacheService.isAnyOutdated();
+    return LoaderVersion.isOutdated() || ModCacheService.isAnyOutdated() || SdkStateService.isHijacked();
   }
 
   render() {
-    const {progress, outdated, modsOutdated, modsOutdatedCount, dismissed} = this.state;
+    const {progress, outdated, modsOutdated, modsOutdatedCount, sdkHijacked, sdkHijackedCount, dismissed} = this.state;
     if (dismissed) {
       return null;
     }
     // Nothing worth showing: no mods to load and everything is current.
-    if (progress.total === 0 && !outdated && !modsOutdated) {
+    if (progress.total === 0 && !outdated && !modsOutdated && !sdkHijacked) {
       return null;
     }
 
@@ -179,6 +193,15 @@ export default class ModLoadingWindow extends Component<{}, ModLoadingWindowStat
                   <Icon name="refresh"/>
                   {i18n('loading-button-reload')}
                 </button>
+              </div>
+            )}
+
+            {sdkHijacked && (
+              <div className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5">
+                <p className="m-0 text-[0.8125rem] font-bold text-amber-800">{i18n('loading-sdk-hijacked-title')}</p>
+                <p className="m-0 mt-1 text-xs leading-5 text-amber-700">
+                  {i18n('loading-sdk-hijacked-detail', {count: sdkHijackedCount})}
+                </p>
               </div>
             )}
 

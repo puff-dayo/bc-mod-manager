@@ -115,6 +115,15 @@
   }
 
   try {
+    Object.defineProperty(window, 'bcModSdk', {
+      configurable: true,
+      enumerable: true,
+      get: function () { return undefined; },
+      set: function () { /* reserved for bmm */ },
+    });
+  } catch (e) { /* already defined — best effort */ }
+
+  try {
     load();
   } catch (e) {
     injectScript("t" + Math.floor(Date.now() / 3600000), false, null);

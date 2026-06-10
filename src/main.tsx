@@ -1,7 +1,7 @@
 import {render} from 'preact'
 import '@/index.css'
 import '@/fusam.ts'
-import '@/bcmodsdk.js'
+import 'bondage-club-mod-sdk'
 import App from '@/app.tsx'
 import {Logger} from "@/infrastructure/logging/Logger";
 import {LogService} from "@/service/LogService.ts";

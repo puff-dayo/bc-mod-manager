@@ -141,6 +141,8 @@
   "loading-outdated-detail": "An older cached version is running. Reload the page to update to the latest version.",
   "loading-mods-outdated-title": "Mod updates available",
   "loading-mods-outdated-detail": "{count} cached mod(s) are running an older version. Reload the page to update.",
+  "loading-sdk-hijacked-title": "BC Mod Manager SDK conflict",
+  "loading-sdk-hijacked-detail": "BC's bundled Mod SDK initialized before BMM and {count} mod(s) had already registered.",
   "loading-button-reload": "Reload page",
   "title-settings": "Settings",
   "subtitle-settings": "Configure how the mod manager loads and updates mods.",

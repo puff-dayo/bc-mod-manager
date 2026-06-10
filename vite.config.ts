@@ -3,6 +3,18 @@ import preact from '@preact/preset-vite'
 import tailwindcss from '@tailwindcss/vite'
 import cssInjectedByJsPlugin from "vite-plugin-css-injected-by-js"
 import {fileURLToPath, URL} from "node:url";
+import {readFileSync} from "node:fs";
+
+// Bondage Club Mod SDK is built from the `vendor/bondage-club-mod-sdk` submodule.
+// `scripts/sync-sdk.mjs` copies the submodule's `src/` into `.built-sdk/` and
+// applies any local patches from `patches/bcmodsdk/`. The alias below points
+// Vite at the patched copy — never directly at the submodule, so the submodule
+// stays pristine. The SDK source expects a `VERSION` global (normally injected
+// by its own Rollup build), so we supply it from the submodule's package.json
+// via Vite's `define`.
+const bcModSdkVersion: string = JSON.parse(
+  readFileSync(fileURLToPath(new URL('./vendor/bondage-club-mod-sdk/package.json', import.meta.url)), 'utf-8'),
+).version
 
 // https://vite.dev/config/
 const bmmInitialization = `
@@ -90,9 +102,13 @@ export default defineConfig({
     },
   ],
   base: './',
+  define: {
+    VERSION: JSON.stringify(bcModSdkVersion),
+  },
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
+      'bondage-club-mod-sdk': fileURLToPath(new URL('./.built-sdk/index.ts', import.meta.url)),
     },
   },
   build: {

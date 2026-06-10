@@ -4,7 +4,10 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
+    "sync-sdk": "node scripts/sync-sdk.mjs",
+    "predev": "npm run sync-sdk",
     "dev": "vite",
+    "prebuild": "npm run sync-sdk",
     "build": "tsc -b && vite build",
     "preview": "vite preview"
   },

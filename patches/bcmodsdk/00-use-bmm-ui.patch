@@ -1,0 +1,98 @@
+--- a/errors.ts
++++ b/errors.ts
+@@ -1,6 +1,8 @@
++import { showSdkAlert } from '@/service/SdkUiService';
++
+ export function ThrowError(error: string): never {
+-	alert('Mod ERROR:\n' + error);
++	showSdkAlert('Mod ERROR:\n' + error);
+ 	const err = new Error(error);
+ 	console.error(err);
+ 	throw err;
+-}
++}
+\ No newline at end of file
+--- a/sdkApi.ts
++++ b/sdkApi.ts
+@@ -5,6 +5,13 @@
+ export let sdkApi: ModSDKGlobalAPI;
+ export const API_VERSION: number = 1;
+ 
++// Tracks instances we created so Init() can tell ours from BC's bundled SDK.
++const _ourInstances = new WeakSet<object>();
++
++export function isOurSdkInstance(api: unknown): boolean {
++	return typeof api === 'object' && api !== null && _ourInstances.has(api as object);
++}
++
+ export function CreateGlobalAPI(): ModSDKGlobalAPI {
+ 	const result: ModSDKGlobalAPI = {
+ 		version: VERSION,
+@@ -19,7 +26,8 @@
+ 		}),
+ 	};
+ 
++	_ourInstances.add(result);
+ 	sdkApi = result;
+ 
+ 	return Object.freeze(result);
+-}
++}
+\ No newline at end of file
+--- a/index.ts
++++ b/index.ts
+@@ -1,20 +1,45 @@
+ import { ThrowError } from './errors';
+ import type { ModSDKGlobalAPI } from './api';
+-import { API_VERSION, CreateGlobalAPI } from './sdkApi';
++import { API_VERSION, CreateGlobalAPI, isOurSdkInstance } from './sdkApi';
+ import { IsObject } from './utils';
++import { showSdkAlert, notifySdkHijacked } from '@/service/SdkUiService';
+ 
+ function Init(): ModSDKGlobalAPI {
++	// Clear the no-op setter placed by bmm.user.js at document-start so that
++	// BC's synchronous bcmodsdk.min.js init was silently discarded and we own
++	// window.bcModSdk from here.
++	const _desc = Object.getOwnPropertyDescriptor(window, 'bcModSdk');
++	if (_desc && typeof _desc.set === 'function' && typeof _desc.get === 'function') {
++		Object.defineProperty(window, 'bcModSdk', { configurable: true, writable: true, value: undefined });
++	}
++
+ 	if (typeof window.bcModSdk === 'undefined') {
+ 		return window.bcModSdk = CreateGlobalAPI();
+ 	}
+ 	if (!IsObject(window.bcModSdk)) {
+ 		ThrowError('Failed to init Mod SDK: Name already in use');
+ 	}
++
++	// BC's bundled SDK beat us (interceptor wasn't in place or failed).
++	if (!isOurSdkInstance(window.bcModSdk)) {
++		const modsInfo = typeof window.bcModSdk.getModsInfo === 'function'
++			? window.bcModSdk.getModsInfo()
++			: [];
++		if (modsInfo.length === 0) {
++			// No mods registered yet — safe to take over.
++			return window.bcModSdk = CreateGlobalAPI();
++		}
++		// Mods already hold references into BC's SDK state; replacing would break them.
++		notifySdkHijacked(modsInfo);
++		return window.bcModSdk;
++	}
++
++	// Our instance — standard version compatibility checks.
+ 	if (window.bcModSdk.apiVersion !== API_VERSION) {
+ 		ThrowError(`Failed to init Mod SDK: Different version already loaded ('${VERSION}' vs '${window.bcModSdk.version}')`);
+ 	}
+ 	if (window.bcModSdk.version !== VERSION) {
+-		alert(
++		showSdkAlert(
+ 			`Mod SDK warning: Loading different but compatible versions ('${VERSION}' vs '${window.bcModSdk.version}')\n` +
+ 			'One of mods you are using is using an old version of SDK. It will work for now but please inform author to update',
+ 		);
+@@ -38,4 +63,4 @@
+ /** @public */
+ export default bcModSdk;
+ 
+-export * from './api';
++export * from './api';
+\ No newline at end of file

@@ -141,6 +141,8 @@
   "loading-outdated-detail": "当前运行的是缓存的旧版本，请刷新页面以更新到最新版本。",
   "loading-mods-outdated-title": "模组有可用更新",
   "loading-mods-outdated-detail": "有 {count} 个缓存的模组正在运行旧版本，请刷新页面以更新。",
+  "loading-sdk-hijacked-title": "BC Mod Manager SDK 冲突",
+  "loading-sdk-hijacked-detail": "BC 自带的 Mod SDK 在 BMM 之前完成了初始化，且已有 {count} 个 Mod 完成注册，无法安全替换。",
   "loading-button-reload": "刷新页面",
   "title-settings": "设置",
   "subtitle-settings": "配置模组管理器加载和更新模组的方式。",

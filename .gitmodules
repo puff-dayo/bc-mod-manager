@@ -1,0 +1,3 @@
+[submodule "vendor/bondage-club-mod-sdk"]
+	path = vendor/bondage-club-mod-sdk
+	url = https://github.com/Jomshir98/bondage-club-mod-sdk.git
