@@ -1,7 +1,9 @@
 import {Component} from "preact";
-import {type ModConfig, ModService} from "@/service/ModService";
-import {type FusamAddon} from "@/service/RegistryDataService";
-import {type ModLoadEntry, ModLoaderService, type ModLoadStatus} from "@/service/ModLoaderService";
+import {ModService} from "@/service/ModService";
+import {ModLoaderService} from "@/service/ModLoaderService";
+import type {ModConfig} from "@/domain/Mod";
+import type {FusamAddon} from "@/domain/Registry";
+import type {ModLoadEntry, ModLoadStatus} from "@/domain/ModLoad";
 import i18n, {currentLanguage} from "@/i18n/i18n.ts";
 import {formatDuration, formatInitial, formatLocalizedName, formatSearchText} from "@/component/ui/format";
 import CustomExtensionModal from "@/component/CustomExtensionModal";

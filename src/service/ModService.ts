@@ -1,94 +1,45 @@
-import {LocalStorageService} from '@/service/LocalStorageService';
-import {type CachedRegistryData, type FusamAddon, RegistryDataService} from '@/service/RegistryDataService';
+import {ModConfigRepository} from '@/repository/ModConfigRepository';
+import {RegistryDataService} from '@/service/RegistryDataService';
 import {ModLoaderService} from '@/service/ModLoaderService';
 import {CustomExtensionService} from '@/service/CustomExtensionService';
-
-/**
- * Mod Configuration
- * Stores user's mod preferences
- */
-export interface ModConfig {
-  modId: string;                    // Unique mod ID from registry
-  registryId: string;               // Which registry this mod is from
-  enabled: boolean;                 // Whether the mod is enabled
-  selectedVersion: string;          // Selected distribution (e.g., "stable", "dev", "beta")
-  installedAt: number;              // Timestamp when mod was first added
-  updatedAt: number;                // Timestamp when config was last updated
-}
-
-/**
- * Mod with full details (combines config + registry data)
- */
-export interface ModWithDetails extends ModConfig {
-  name: string;
-  nameLanguage?: Record<string, string>;
-  description: string;
-  author: string;
-  repository?: string;
-  tags?: string[];
-  type?: string;
-  icon?: string;
-  website?: string;
-  discord?: string;
-  noCacheBusting?: boolean;          // Author opted out of cache busting (load URL verbatim)
-  availableVersions: string[];      // List of available distributions
-  sourceUrl?: string;               // URL to the selected version's source
-}
+import type {ModConfig, ModWithDetails} from '@/domain/Mod';
+import type {CachedRegistryData, FusamAddon} from '@/domain/Registry';
 
 /**
  * Mod Service
- * Manages user's mod configurations and preferences
+ * Manages the user's mod configurations and combines them with registry data.
+ * Persistence is delegated to {@link ModConfigRepository}.
  */
 export class ModService {
-  private static readonly STORAGE_KEY = 'bmm_mod_configs';
+  private static readonly repo = new ModConfigRepository();
 
   /**
    * Get all mod configurations
    */
   static getAllConfigs(): ModConfig[] {
-    const configs = LocalStorageService.getItem<ModConfig[]>(this.STORAGE_KEY);
-    return configs || [];
+    return this.repo.getAll();
   }
 
   /**
    * Get a mod configuration by ID
    */
   static getConfig(modId: string, registryId: string): ModConfig | null {
-    const configs = this.getAllConfigs();
-    return configs.find(c => c.modId === modId && c.registryId === registryId) || null;
+    return this.repo.findByKey(`${modId}_${registryId}`);
   }
 
   /**
    * Add or update a mod configuration
    */
   static saveConfig(config: Omit<ModConfig, 'installedAt' | 'updatedAt'>): ModConfig {
-    const configs = this.getAllConfigs();
-    const existingIndex = configs.findIndex(
-      c => c.modId === config.modId && c.registryId === config.registryId
-    );
-
+    const existing = this.getConfig(config.modId, config.registryId);
     const now = Date.now();
-    let savedConfig: ModConfig;
 
-    if (existingIndex !== -1) {
-      // Update existing config
-      savedConfig = {
-        ...configs[existingIndex],
-        ...config,
-        updatedAt: now,
-      };
-      configs[existingIndex] = savedConfig;
-    } else {
-      // Create new config
-      savedConfig = {
-        ...config,
-        installedAt: now,
-        updatedAt: now,
-      };
-      configs.push(savedConfig);
-    }
+    // Update existing config (preserving installedAt) or create a new one.
+    const savedConfig: ModConfig = existing
+      ? {...existing, ...config, updatedAt: now}
+      : {...config, installedAt: now, updatedAt: now};
 
-    LocalStorageService.setItem(this.STORAGE_KEY, configs);
+    this.repo.upsert(savedConfig);
     return savedConfig;
   }
 
@@ -124,24 +75,14 @@ export class ModService {
    * Remove a mod configuration
    */
   static removeConfig(modId: string, registryId: string): boolean {
-    const configs = this.getAllConfigs();
-    const config = configs.find(c => c.modId === modId && c.registryId === registryId);
+    const config = this.getConfig(modId, registryId);
 
     // Mark mod as disabled for refresh tracking if it was enabled
     if (config && config.enabled) {
       ModLoaderService.markModDisabled(modId, registryId);
     }
 
-    const filtered = configs.filter(
-      c => !(c.modId === modId && c.registryId === registryId)
-    );
-
-    if (filtered.length === configs.length) {
-      return false; // Not found
-    }
-
-    LocalStorageService.setItem(this.STORAGE_KEY, filtered);
-    return true;
+    return this.repo.removeByKey(`${modId}_${registryId}`);
   }
 
   /**
@@ -323,7 +264,6 @@ export class ModService {
    * Clear all mod configurations
    */
   static clearAll(): void {
-    LocalStorageService.setItem(this.STORAGE_KEY, []);
+    this.repo.clear();
   }
 }
-

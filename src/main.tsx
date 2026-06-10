@@ -3,21 +3,22 @@ import '@/index.css'
 import '@/fusam.ts'
 import '@/bcmodsdk.js'
 import App from '@/app.tsx'
+import {Logger} from "@/infrastructure/logging/Logger";
 import {LogService} from "@/service/LogService.ts";
 import {ModService} from "@/service/ModService.ts";
 import {RegistryService} from "@/service/RegistryService.ts";
 import {RegistryDataService} from "@/service/RegistryDataService.ts";
 import {ModLoaderService} from "@/service/ModLoaderService.ts";
 
-LogService.info('BC Mod Manager started');
+Logger.info('BC Mod Manager started');
 
 // fetch all registries and cache data
 RegistryDataService.fetchAllRegistries(RegistryService.getAll())
   .then(() => {
-    LogService.info('Registry data fetched and cached');
+    Logger.info('Registry data fetched and cached');
   })
   .catch(error => {
-    LogService.error('Error fetching registry data:', error);
+    Logger.error('Error fetching registry data:', error);
   });
 
 // Initialize mod loader to preload enabled mods
@@ -107,7 +108,7 @@ ${loadedMods.length > 0 ? loadedMods.map(key => `- ${key}`).join('\n') : '(none)
     `.trim();
 });
 
-LogService.debug('Debug methods registered', {
+Logger.debug('Debug methods registered', {
   count: LogService.getDebugMethods().length
 });
 

@@ -1,5 +1,5 @@
 import {Component} from "preact";
-import {ModalService, type ModalState} from "@/service/ModalService";
+import {ModalStore, type ModalState} from "@/ui/store/ModalStore";
 import ModalDialog from "@/component/ModalDialog.tsx";
 
 interface ModalContainerState {
@@ -23,7 +23,7 @@ export default class ModalContainer extends Component<{}, ModalContainerState> {
 
   componentDidMount() {
     // Subscribe to modal state changes
-    this.unsubscribe = ModalService.subscribe((modals) => {
+    this.unsubscribe = ModalStore.subscribe((modals) => {
       this.setState({modals});
     });
 
@@ -56,7 +56,7 @@ export default class ModalContainer extends Component<{}, ModalContainerState> {
     }
 
     // Close the modal
-    ModalService.close(modalId);
+    ModalStore.close(modalId);
   };
 
   render() {

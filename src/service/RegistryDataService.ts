@@ -1,75 +1,27 @@
-import {LocalStorageService} from '@/service/LocalStorageService';
-import type {Registry, RegistryType} from '@/service/RegistryService';
-import {LogService} from "@/service/LogService.ts";
-
-/**
- * Fusam Registry Data Structure
- */
-export interface FusamAddon {
-  id: string;
-  name: string | Record<string, string>;
-  description: string;
-  author: string;
-  repository?: string;
-  tags?: string[];
-  type?: string;
-  icon?: string;
-  website?: string;
-  discord?: string;
-  noCacheBusting?: boolean;
-  versions: Array<{
-    distribution: string;
-    source: string;
-  }>;
-}
-
-export interface FusamRegistryData {
-  version: string;
-  addons: FusamAddon[];
-}
-
-/**
- * Aurora Registry Data Structure (placeholder - adjust based on actual structure)
- */
-export interface AuroraRegistryData {
-  // TODO: Define based on actual aurora registry structure
-  [key: string]: any;
-}
-
-/**
- * Cached Registry Data
- */
-export interface CachedRegistryData {
-  registryId: string;
-  registryUrl: string;
-  registryType: RegistryType;
-  data: FusamRegistryData | AuroraRegistryData | null;
-  modCount: number;
-  fetchedAt: number;
-  error: string | null;
-}
+import {RegistryCacheRepository} from '@/repository/RegistryCacheRepository';
+import {Logger} from '@/infrastructure/logging/Logger';
+import type {AuroraRegistryData, CachedRegistryData, FusamRegistryData, Registry} from '@/domain/Registry';
 
 /**
  * Registry Data Service
- * Handles fetching and caching registry data
+ * Handles fetching and parsing registry data; persistence is delegated to
+ * {@link RegistryCacheRepository}.
  */
 export class RegistryDataService {
-  private static readonly CACHE_STORAGE_KEY = 'bmm_registry_cache';
+  private static readonly repo = new RegistryCacheRepository();
 
   /**
    * Get all cached registry data
    */
   static getAllCached(): CachedRegistryData[] {
-    const cached = LocalStorageService.getItem<CachedRegistryData[]>(this.CACHE_STORAGE_KEY);
-    return cached || [];
+    return this.repo.getAll();
   }
 
   /**
    * Get cached data for a specific registry
    */
   static getCached(registryId: string): CachedRegistryData | null {
-    const allCached = this.getAllCached();
-    return allCached.find(c => c.registryId === registryId) || null;
+    return this.repo.findByKey(registryId);
   }
 
   /**
@@ -79,7 +31,7 @@ export class RegistryDataService {
     const startTime = Date.now();
 
     try {
-      LogService.info(`Fetching registry data from: ${registry.url}`);
+      Logger.info(`Fetching registry data from: ${registry.url}`);
 
       const response = await fetch(registry.url, {
         method: 'GET',
@@ -119,13 +71,13 @@ export class RegistryDataService {
       };
 
       // Save to cache
-      this.saveToCache(cachedData);
+      this.repo.upsert(cachedData);
 
-      LogService.info(`Successfully fetched ${modCount} mods in ${Date.now() - startTime}ms`);
+      Logger.info(`Successfully fetched ${modCount} mods in ${Date.now() - startTime}ms`);
 
       return cachedData;
     } catch (error) {
-      LogService.error('Error fetching registry:', error);
+      Logger.error('Error fetching registry:', error);
 
       const cachedData: CachedRegistryData = {
         registryId: registry.id,
@@ -138,7 +90,7 @@ export class RegistryDataService {
       };
 
       // Save error to cache
-      this.saveToCache(cachedData);
+      this.repo.upsert(cachedData);
 
       return cachedData;
     }
@@ -156,16 +108,14 @@ export class RegistryDataService {
    * Clear cache for a specific registry
    */
   static clearCache(registryId: string): void {
-    const allCached = this.getAllCached();
-    const filtered = allCached.filter(c => c.registryId !== registryId);
-    LocalStorageService.setItem(this.CACHE_STORAGE_KEY, filtered);
+    this.repo.removeByKey(registryId);
   }
 
   /**
    * Clear all cache
    */
   static clearAllCache(): void {
-    LocalStorageService.setItem(this.CACHE_STORAGE_KEY, []);
+    this.repo.clear();
   }
 
   /**
@@ -202,21 +152,4 @@ export class RegistryDataService {
   static isCacheStale(cachedData: CachedRegistryData, maxAgeMs: number = 3600000): boolean {
     return this.getCacheAge(cachedData) > maxAgeMs;
   }
-
-  /**
-   * Save cached data
-   */
-  private static saveToCache(cachedData: CachedRegistryData): void {
-    const allCached = this.getAllCached();
-    const index = allCached.findIndex(c => c.registryId === cachedData.registryId);
-
-    if (index !== -1) {
-      allCached[index] = cachedData;
-    } else {
-      allCached.push(cachedData);
-    }
-
-    LocalStorageService.setItem(this.CACHE_STORAGE_KEY, allCached);
-  }
 }
-

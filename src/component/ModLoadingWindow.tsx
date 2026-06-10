@@ -2,9 +2,10 @@ import {Component} from "preact";
 import i18n from "@/i18n/i18n.ts";
 import classNames from "@/component/ui/classNames.ts";
 import Icon from "@/component/ui/Icon.tsx";
-import {ModLoaderService, type ModLoadProgress, type ModLoadStatus} from "@/service/ModLoaderService.ts";
-import {LoaderVersionService} from "@/service/LoaderVersionService.ts";
+import {ModLoaderService} from "@/service/ModLoaderService.ts";
 import {ModCacheService} from "@/service/ModCacheService.ts";
+import {LoaderVersion} from "@/infrastructure/bridge/LoaderVersion";
+import type {ModLoadProgress, ModLoadStatus} from "@/domain/ModLoad";
 import {formatDuration} from "@/component/ui/format.ts";
 
 // Auto-dismiss the window shortly after loading finishes (unless the build is
@@ -50,7 +51,7 @@ export default class ModLoadingWindow extends Component<{}, ModLoadingWindowStat
     super(props);
     this.state = {
       progress: ModLoaderService.getProgress(),
-      outdated: LoaderVersionService.isOutdated(),
+      outdated: LoaderVersion.isOutdated(),
       modsOutdated: ModCacheService.isAnyOutdated(),
       modsOutdatedCount: ModCacheService.getOutdatedCount(),
       dismissed: false,
@@ -63,8 +64,8 @@ export default class ModLoadingWindow extends Component<{}, ModLoadingWindowStat
       this.scheduleAutoHide(progress.finished);
     });
 
-    this.unsubscribeVersion = LoaderVersionService.subscribe(() => {
-      const outdated = LoaderVersionService.isOutdated();
+    this.unsubscribeVersion = LoaderVersion.subscribe(() => {
+      const outdated = LoaderVersion.isOutdated();
       if (outdated) {
         // Keep (or bring back) the window so the warning is always seen, even if the
         // stale build was detected after the progress window had auto-dismissed.
@@ -110,7 +111,7 @@ export default class ModLoadingWindow extends Component<{}, ModLoadingWindowStat
   }
 
   private anyOutdated(): boolean {
-    return LoaderVersionService.isOutdated() || ModCacheService.isAnyOutdated();
+    return LoaderVersion.isOutdated() || ModCacheService.isAnyOutdated();
   }
 
   render() {

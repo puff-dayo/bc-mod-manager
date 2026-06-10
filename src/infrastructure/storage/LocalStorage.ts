@@ -1,10 +1,10 @@
-import {LogService} from "@/service/LogService.ts";
+import {Logger} from "@/infrastructure/logging/Logger";
 
 /**
- * LocalStorageService - Handles all localStorage operations
- * Provides a centralized way to interact with browser's localStorage
+ * LocalStorage - Handles all localStorage operations
+ * Provides a centralized way to interact with the browser's localStorage.
  */
-export class LocalStorageService {
+export class LocalStorage {
   /**
    * Get an item from localStorage
    * @param key - The key to retrieve
@@ -18,7 +18,7 @@ export class LocalStorageService {
       }
       return JSON.parse(item) as T;
     } catch (error) {
-      LogService.error(`Error getting item from localStorage: ${key}`, error);
+      Logger.error(`Error getting item from localStorage: ${key}`, error);
       return null;
     }
   }
@@ -32,7 +32,7 @@ export class LocalStorageService {
     try {
       localStorage.setItem(key, JSON.stringify(value));
     } catch (error) {
-      LogService.error(`Error setting item in localStorage: ${key}`, error);
+      Logger.error(`Error setting item in localStorage: ${key}`, error);
     }
   }
 
@@ -44,7 +44,7 @@ export class LocalStorageService {
     try {
       localStorage.removeItem(key);
     } catch (error) {
-      LogService.error(`Error removing item from localStorage: ${key}`, error);
+      Logger.error(`Error removing item from localStorage: ${key}`, error);
     }
   }
 
@@ -55,8 +55,7 @@ export class LocalStorageService {
     try {
       localStorage.clear();
     } catch (error) {
-      LogService.error('Error clearing localStorage', error);
+      Logger.error('Error clearing localStorage', error);
     }
   }
 }
-

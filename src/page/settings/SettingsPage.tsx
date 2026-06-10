@@ -1,6 +1,7 @@
 import {Component} from "preact";
 import i18n from "@/i18n/i18n.ts";
-import {type AppSettings, SettingsService} from "@/service/SettingsService.ts";
+import {SettingsService} from "@/service/SettingsService.ts";
+import type {AppSettings} from "@/domain/Settings";
 import Page from "@/component/ui/Page.tsx";
 import PageHeader from "@/component/ui/PageHeader.tsx";
 import Panel from "@/component/ui/Panel.tsx";

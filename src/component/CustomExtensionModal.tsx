@@ -1,5 +1,6 @@
 import {Component} from 'preact';
-import {type CustomExtension, CustomExtensionService, type CustomExtensionType} from '@/service/CustomExtensionService';
+import {CustomExtensionService} from '@/service/CustomExtensionService';
+import type {CustomExtension, CustomExtensionType} from '@/domain/CustomExtension';
 import i18n from '@/i18n/i18n';
 import Alert from '@/component/ui/Alert';
 import Badge from '@/component/ui/Badge';

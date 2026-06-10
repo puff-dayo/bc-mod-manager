@@ -1,5 +1,5 @@
 /**
- * Loader Version Service
+ * Loader Version bridge
  *
  * Bridges to the `window.__bmmLoader` state published by the bootstrap userscript
  * (public/bmm.user.js). It lets the in-page app tell whether the cached mod-loader
@@ -9,7 +9,7 @@
  * The bridge is absent when running outside the userscript (e.g. the Vite dev
  * server); in that case the loader is always treated as up to date.
  */
-export class LoaderVersionService {
+export class LoaderVersion {
   /**
    * Whether the running loader build is older than the latest known build.
    * Returns false when the bridge is unavailable, when the build is up to date,

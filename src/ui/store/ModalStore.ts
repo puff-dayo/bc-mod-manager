@@ -1,6 +1,8 @@
+import {Observable} from '@/infrastructure/pubsub/Observable';
+
 /**
- * ModalService - Manages modal dialogs
- * Provides both callback-based and promise-based APIs for showing modals
+ * ModalStore - UI state for the modal dialog stack.
+ * Provides both callback-based and promise-based APIs for showing modals.
  */
 
 export interface ModalState {
@@ -11,26 +13,23 @@ export interface ModalState {
   buttons?: { submit: string } & Record<string, string>;
 }
 
-type ModalListener = (modals: ModalState[]) => void;
-
-export class ModalService {
+export class ModalStore {
   private static modals: ModalState[] = [];
-  private static listeners: Set<ModalListener> = new Set();
   private static modalIdCounter = 0;
+  // No onListenerError: preserve the original un-guarded notify semantics
+  // (a throwing listener propagates and aborts the remaining listeners).
+  private static readonly observable = new Observable<ModalState[]>({
+    emitOnSubscribe: true,
+    getSnapshot: () => [...this.modals],
+  });
 
   /**
    * Subscribe to modal state changes
    * @param listener - Function to call when modals change
    * @returns Unsubscribe function
    */
-  static subscribe(listener: ModalListener): () => void {
-    this.listeners.add(listener);
-    // Immediately call with current state
-    listener([...this.modals]);
-
-    return () => {
-      this.listeners.delete(listener);
-    };
+  static subscribe(listener: (modals: ModalState[]) => void): () => void {
+    return this.observable.subscribe(listener);
   }
 
   /**
@@ -81,10 +80,7 @@ export class ModalService {
    * Notify all listeners of state change
    */
   private static notify(): void {
-    const modalsCopy = [...this.modals];
-    this.listeners.forEach(listener => {
-      listener(modalsCopy);
-    });
+    this.observable.notify([...this.modals]);
   }
 
   /**
@@ -94,4 +90,3 @@ export class ModalService {
     return `modal_${Date.now()}_${this.modalIdCounter++}`;
   }
 }
-

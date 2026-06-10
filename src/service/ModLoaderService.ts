@@ -1,53 +1,16 @@
 import {ModService} from '@/service/ModService';
-import {LogService} from '@/service/LogService';
 import {ModCacheService} from '@/service/ModCacheService';
 import {SettingsService} from '@/service/SettingsService';
-
-type ModLoadType = 'script' | 'module' | 'eval';
-
-/**
- * Load status of a single mod, as surfaced to the loading window.
- */
-export type ModLoadStatus = 'pending' | 'loading' | 'loaded' | 'error';
-
-/**
- * Progress entry for a single mod.
- */
-export interface ModLoadEntry {
-  modKey: string;
-  modId: string;
-  registryId: string;
-  name: string;
-  status: ModLoadStatus;
-  loadType?: ModLoadType;       // how the mod is injected (script/module/eval)
-  distribution?: string;        // selected version/distribution
-  startedAt?: number;           // timestamp when the mod started loading
-  settledAt?: number;           // timestamp when the mod finished (loaded or errored)
-  durationMs?: number;          // settledAt - startedAt (actual load time)
-  error?: string;               // failure reason when status === 'error'
-  postLoadError?: string;       // a runtime error thrown *after* the mod already loaded
-}
-
-/**
- * Snapshot of the overall mod loading progress.
- */
-export interface ModLoadProgress {
-  entries: ModLoadEntry[];
-  total: number;
-  settled: number;        // loaded + errored
-  loaded: number;
-  errored: number;
-  waitingForGame: boolean; // waiting for the game (Player) to become available
-  started: boolean;        // loadAllEnabledMods has been called
-  finished: boolean;       // started, no longer waiting, and every mod has settled
-  totalDurationMs?: number; // wall-clock span from the first start to the last settle
-}
-
-type ProgressListener = (progress: ModLoadProgress) => void;
+import {Logger} from '@/infrastructure/logging/Logger';
+import {Observable} from '@/infrastructure/pubsub/Observable';
+import {ScriptInjector} from '@/infrastructure/dom/ScriptInjector';
+import type {ModLoadEntry, ModLoadProgress, ModLoadStatus, ModLoadType} from '@/domain/ModLoad';
 
 /**
  * Mod Loader Service
- * Handles loading and injecting mod scripts into the page
+ * Handles loading and injecting mod scripts into the page. DOM mechanics are
+ * delegated to {@link ScriptInjector}; this service owns the load state machine,
+ * runtime-error attribution and progress reporting.
  */
 export class ModLoaderService {
   private static loadedMods: Set<string> = new Set();
@@ -56,7 +19,6 @@ export class ModLoaderService {
   private static scheduledPreload: number | null = null;
   private static scheduledLoad: number | null = null;
   private static loadProgress: Map<string, ModLoadEntry> = new Map();
-  private static progressListeners: Set<ProgressListener> = new Set();
   private static loadStarted: boolean = false;
   private static waitingForGame: boolean = false;
   // Maps an absolute script URL to the mod it belongs to, so runtime errors
@@ -66,13 +28,18 @@ export class ModLoaderService {
   // scripts run inline, so their runtime errors have no useful filename).
   private static executingEvalModKey: string | null = null;
   private static runtimeErrorListenerInstalled: boolean = false;
+  private static readonly observable = new Observable<ModLoadProgress>({
+    emitOnSubscribe: true,
+    getSnapshot: () => this.getProgress(),
+    onListenerError: (error) => Logger.error('ModLoaderService: progress listener threw', error),
+  });
 
   /**
    * Initialize the mod loader
    * Loads all enabled mods on startup
    */
   static initialize(): void {
-    LogService.info('ModLoaderService: Initializing mod loader');
+    Logger.info('ModLoaderService: Initializing mod loader');
 
     // Watch for runtime errors thrown by mod scripts so a mod that downloads
     // fine but crashes while initializing is reported as failed, not loaded.
@@ -85,7 +52,7 @@ export class ModLoaderService {
       this.initialEnabledMods.add(modKey);
     });
 
-    LogService.info(`ModLoaderService: Initialize succeed`);
+    Logger.info(`ModLoaderService: Initialize succeed`);
   }
 
   /**
@@ -139,14 +106,14 @@ export class ModLoaderService {
 
     // Skip if already loaded
     if (this.loadedMods.has(modKey)) {
-      LogService.debug(`ModLoaderService: Mod ${modName} (${modKey}) already loaded, skipping`);
+      Logger.debug(`ModLoaderService: Mod ${modName} (${modKey}) already loaded, skipping`);
       this.trackMod(modKey, modId, registryId, modName, 'loaded', {loadType, distribution});
       return;
     }
 
     // Skip if no source URL
     if (!sourceUrl) {
-      LogService.warn(`ModLoaderService: Mod ${modName} (${modKey}) has no source URL, skipping`);
+      Logger.warn(`ModLoaderService: Mod ${modName} (${modKey}) has no source URL, skipping`);
       this.trackMod(modKey, modId, registryId, modName, 'error', {loadType, distribution, error: 'No source URL'});
       return;
     }
@@ -156,7 +123,7 @@ export class ModLoaderService {
       // or the verbatim URL for mods that opt out of cache busting.
       const plan = ModCacheService.planLoad(sourceUrl, SettingsService.get('modCacheEnabled'), noCacheBusting);
       const loadUrl = plan.url;
-      LogService.info(`ModLoaderService: Loading mod ${modName} from ${loadUrl}`);
+      Logger.info(`ModLoaderService: Loading mod ${modName} from ${loadUrl}`);
 
       // Register in FUSAM as loading if available
       this.setFusamStatus(modId, distribution, 'loading');
@@ -171,7 +138,7 @@ export class ModLoaderService {
       const usedPin = plan.cached && ModCacheService.hasPin(modKey);
       const onError = usedPin
         ? () => {
-            LogService.warn(`ModLoaderService: Pinned build of ${modName} failed to load, retrying canonical URL`, {modKey});
+            Logger.warn(`ModLoaderService: Pinned build of ${modName} failed to load, retrying canonical URL`, {modKey});
             ModCacheService.clearPin(modKey, sourceUrl);
             this.registerSourceUrl(sourceUrl, modKey);
             this.dispatchLoad(modId, registryId, modKey, modName, distribution, loadType, sourceUrl, sourceUrl);
@@ -223,13 +190,13 @@ export class ModLoaderService {
 
     // Skip if already loaded
     if (this.loadedMods.has(modKey)) {
-      LogService.debug(`ModLoaderService: Mod ${modName} (${modKey}) already loaded, skipping`);
+      Logger.debug(`ModLoaderService: Mod ${modName} (${modKey}) already loaded, skipping`);
       return;
     }
 
     // Skip if no source URL
     if (!sourceUrl) {
-      LogService.warn(`ModLoaderService: Mod ${modName} (${modKey}) has no source URL, skipping`);
+      Logger.warn(`ModLoaderService: Mod ${modName} (${modKey}) has no source URL, skipping`);
       return;
     }
 
@@ -237,32 +204,20 @@ export class ModLoaderService {
       // Resolve the same URL loadMod will request so the preload actually warms
       // the cache entry the eventual load uses.
       const {url: preloadUrl} = ModCacheService.planLoad(sourceUrl, SettingsService.get('modCacheEnabled'), noCacheBusting);
-      LogService.info(`ModLoaderService: Preloading mod ${modName} from ${preloadUrl}`);
-      const link = document.createElement('link');
-      switch (this.normalizeLoadType(type)) {
-        case 'module':
-          link.rel = 'modulepreload';
-          break;
-        case 'eval':
-          link.rel = 'preload';
-          link.as = 'fetch';
-          link.crossOrigin = 'anonymous';
-          break;
-        case 'script':
-        default:
-          link.rel = 'preload';
-          link.as = 'script';
-          break;
-      }
-      link.href = preloadUrl;
-      link.setAttribute('data-mod-id', modId);
-      link.setAttribute('data-registry-id', registryId);
-      link.setAttribute('data-mod-name', modName);
-      link.setAttribute('data-distribution', distribution);
-      document.head.appendChild(link);
-      LogService.debug(`ModLoaderService: Script element created and appended for ${modName}`);
+      Logger.info(`ModLoaderService: Preloading mod ${modName} from ${preloadUrl}`);
+      ScriptInjector.injectPreloadLink({
+        href: preloadUrl,
+        loadType: this.normalizeLoadType(type),
+        dataset: {
+          'data-mod-id': modId,
+          'data-registry-id': registryId,
+          'data-mod-name': modName,
+          'data-distribution': distribution,
+        },
+      });
+      Logger.debug(`ModLoaderService: Script element created and appended for ${modName}`);
     } catch (error) {
-      LogService.error(`ModLoaderService: Error preloading mod ${modName}`, error);
+      Logger.error(`ModLoaderService: Error preloading mod ${modName}`, error);
     }
   }
 
@@ -283,7 +238,7 @@ export class ModLoaderService {
 
     // Only mark as disabled if it was initially enabled
     if (this.initialEnabledMods.has(modKey)) {
-      LogService.info(`ModLoaderService: Mod ${modKey} has been disabled, page refresh will be required`);
+      Logger.info(`ModLoaderService: Mod ${modKey} has been disabled, page refresh will be required`);
       this.hasDisabledMods = true;
     }
   }
@@ -308,7 +263,7 @@ export class ModLoaderService {
    */
   static refreshIfNeeded(): void {
     if (this.hasDisabledMods) {
-      LogService.info('ModLoaderService: Mods have been disabled, refreshing page...');
+      Logger.info('ModLoaderService: Mods have been disabled, refreshing page...');
       window.location.reload();
     } else {
       this.loadAllEnabledMods();
@@ -343,12 +298,8 @@ export class ModLoaderService {
    * The listener is invoked immediately with the current snapshot and again on
    * every change. Returns an unsubscribe function.
    */
-  static subscribeProgress(listener: ProgressListener): () => void {
-    this.progressListeners.add(listener);
-    listener(this.getProgress());
-    return () => {
-      this.progressListeners.delete(listener);
-    };
+  static subscribeProgress(listener: (progress: ModLoadProgress) => void): () => void {
+    return this.observable.subscribe(listener);
   }
 
   /**
@@ -386,18 +337,15 @@ export class ModLoaderService {
    * Note: This may not fully unload mods that have already executed
    */
   static unloadAllMods(): void {
-    LogService.info('ModLoaderService: Unloading all mods');
+    Logger.info('ModLoaderService: Unloading all mods');
 
-    // Find all mod script elements
-    const modScripts = document.querySelectorAll('script[data-mod-id]');
-    modScripts.forEach(script => {
-      script.remove();
-    });
+    // Find all mod script elements and remove them
+    ScriptInjector.removeAllModScripts();
 
     // Clear loaded mods set
     this.loadedMods.clear();
 
-    LogService.info('ModLoaderService: All mod scripts removed');
+    Logger.info('ModLoaderService: All mod scripts removed');
   }
 
   private static preloadAllEnabledModsImpl(): void {
@@ -406,14 +354,14 @@ export class ModLoaderService {
     enabledMods.forEach(mod => {
       this.preloadMod(mod.modId, mod.type, mod.registryId, mod.sourceUrl, mod.name, mod.selectedVersion, mod.noCacheBusting);
     });
-    LogService.info(`ModLoaderService: Preloaded ${enabledMods.length} enabled mods`);
+    Logger.info(`ModLoaderService: Preloaded ${enabledMods.length} enabled mods`);
   }
 
   private static loadAllEnabledModsImpl(): void {
     const modsWithDetails = ModService.getAllModsWithDetails();
     const enabledMods = modsWithDetails.filter(mod => mod.enabled);
 
-    LogService.info(`ModLoaderService: Loading ${enabledMods.length} enabled mods`);
+    Logger.info(`ModLoaderService: Loading ${enabledMods.length} enabled mods`);
 
     enabledMods.forEach(mod => {
       this.loadMod(mod.modId, mod.type || 'script', mod.registryId, mod.sourceUrl, mod.name, mod.selectedVersion, mod.noCacheBusting);
@@ -466,21 +414,18 @@ export class ModLoaderService {
     distribution: string,
     modKey: string,
   ): void {
-    const sanitizedSourceUrl = sourceUrl.replace(/[\r\n]/g, '');
-    const script = document.createElement('script');
-    script.type = 'text/javascript';
-    // A classic inline script gets page global-script semantics; direct eval does not.
-    script.text = `${source}\n//# sourceURL=${sanitizedSourceUrl}`;
-    script.setAttribute('data-mod-id', modId);
-    script.setAttribute('data-registry-id', registryId);
-    script.setAttribute('data-mod-name', modName);
-    script.setAttribute('data-distribution', distribution);
-    script.setAttribute('data-load-type', 'eval');
+    const dataset = {
+      'data-mod-id': modId,
+      'data-registry-id': registryId,
+      'data-mod-name': modName,
+      'data-distribution': distribution,
+      'data-load-type': 'eval',
+    };
     // Inline scripts execute synchronously on append; if the source throws, the
     // global error handler fires during this window and attributes it to this mod.
     this.executingEvalModKey = modKey;
     try {
-      document.head.appendChild(script);
+      ScriptInjector.injectInlineScript({source, sourceUrl, dataset});
     } finally {
       this.executingEvalModKey = null;
     }
@@ -496,36 +441,28 @@ export class ModLoaderService {
     type: Exclude<ModLoadType, 'eval'>,
     onError?: (error: unknown) => void,
   ): void {
-    // Create script element
-    const script = document.createElement('script');
-    script.src = loadUrl;
-    script.type = type === 'module' ? 'module' : 'text/javascript';
-    script.async = true;
-    script.crossOrigin = "anonymous";
+    ScriptInjector.injectScript({
+      src: loadUrl,
+      type,
+      dataset: {
+        'data-mod-id': modId,
+        'data-registry-id': registryId,
+        'data-mod-name': modName,
+        'data-distribution': distribution,
+      },
+      onLoad: () => {
+        this.handleLoadSuccess(modId, distribution, modName, modKey);
+      },
+      onError: (error) => {
+        if (onError) {
+          onError(error);
+        } else {
+          this.handleLoadError(modId, distribution, modName, modKey, error);
+        }
+      },
+    });
 
-    script.setAttribute('data-mod-id', modId);
-    script.setAttribute('data-registry-id', registryId);
-    script.setAttribute('data-mod-name', modName);
-    script.setAttribute('data-distribution', distribution);
-
-    // Add load event listener
-    script.onload = () => {
-      this.handleLoadSuccess(modId, distribution, modName, modKey);
-    };
-
-    // Add error event listener
-    script.onerror = (error) => {
-      if (onError) {
-        onError(error);
-      } else {
-        this.handleLoadError(modId, distribution, modName, modKey, error);
-      }
-    };
-
-    // Inject script into body
-    document.head.appendChild(script);
-
-    LogService.debug(`ModLoaderService: Script element created and appended for ${modName}`);
+    Logger.debug(`ModLoaderService: Script element created and appended for ${modName}`);
   }
 
   private static handleLoadSuccess(modId: string, distribution: string, modName: string, modKey: string): void {
@@ -533,7 +470,7 @@ export class ModLoaderService {
     // already marked as errored by the runtime error handler — keep that verdict.
     const existing = this.loadProgress.get(modKey);
     if (existing && existing.status === 'error') {
-      LogService.warn(`ModLoaderService: Mod ${modName} downloaded but crashed during execution`, {
+      Logger.warn(`ModLoaderService: Mod ${modName} downloaded but crashed during execution`, {
         modKey,
         error: existing.error,
       });
@@ -546,7 +483,7 @@ export class ModLoaderService {
     this.updateModStatus(modKey, 'loaded');
 
     const durationMs = this.loadProgress.get(modKey)?.durationMs;
-    LogService.info(
+    Logger.info(
       `ModLoaderService: Successfully loaded mod ${modName}${durationMs !== undefined ? ` in ${durationMs}ms` : ''}`,
       {modKey, durationMs},
     );
@@ -554,7 +491,7 @@ export class ModLoaderService {
 
   private static handleLoadError(modId: string, distribution: string, modName: string, modKey: string, error: unknown): void {
     const message = this.toErrorMessage(error);
-    LogService.error(`ModLoaderService: Failed to load mod ${modName}`, {modKey, error: message});
+    Logger.error(`ModLoaderService: Failed to load mod ${modName}`, {modKey, error: message});
     // A mod that never loaded must not surface an "update available" prompt.
     ModCacheService.clearRuntime(modKey);
     this.setFusamStatus(modId, distribution, 'error');
@@ -575,7 +512,7 @@ export class ModLoaderService {
     if (entry.status === 'loaded') {
       if (entry.postLoadError !== message) {
         entry.postLoadError = message;
-        LogService.error(`ModLoaderService: Mod ${entry.name} threw after loading`, {modKey, error: message});
+        Logger.error(`ModLoaderService: Mod ${entry.name} threw after loading`, {modKey, error: message});
         this.notifyProgress();
       }
       return;
@@ -585,7 +522,7 @@ export class ModLoaderService {
       return;
     }
 
-    LogService.error(`ModLoaderService: Mod ${entry.name} crashed during load`, {modKey, error: message});
+    Logger.error(`ModLoaderService: Mod ${entry.name} crashed during load`, {modKey, error: message});
     this.setFusamStatus(entry.modId, entry.distribution ?? 'unknown', 'error');
     this.updateModStatus(modKey, 'error', message);
   }
@@ -769,14 +706,7 @@ export class ModLoaderService {
   }
 
   private static notifyProgress(): void {
-    const snapshot = this.getProgress();
-    this.progressListeners.forEach(listener => {
-      try {
-        listener(snapshot);
-      } catch (error) {
-        LogService.error('ModLoaderService: progress listener threw', error);
-      }
-    });
+    this.observable.notify(this.getProgress());
   }
 
   private static setFusamStatus(modId: string, distribution: string, status: FUSAMAddonState['status']): void {

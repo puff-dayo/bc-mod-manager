@@ -1,5 +1,5 @@
 import {LogService} from "@/service/LogService.ts";
-import {ModalService} from "@/service/ModalService.ts";
+import {ModalStore} from "@/ui/store/ModalStore.ts";
 
 window.FUSAM = {
   present: true,
@@ -9,11 +9,11 @@ window.FUSAM = {
   },
   modals: {
     open: (options: ModalOptions) => {
-      ModalService.open(options);
+      ModalStore.open(options);
     },
     openAsync: async (options: Omit<ModalOptions, "callback">) => {
       return new Promise((resolve) => {
-        ModalService.open({
+        ModalStore.open({
           ...options,
           callback: (action, inputValue) => {
             resolve([action, inputValue === undefined ? null : inputValue]);

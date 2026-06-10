@@ -1,6 +1,7 @@
 import {Component} from "preact";
-import {type Registry, RegistryService, type RegistryType} from "@/service/RegistryService";
-import {type CachedRegistryData, RegistryDataService} from "@/service/RegistryDataService";
+import {RegistryService} from "@/service/RegistryService";
+import {RegistryDataService} from "@/service/RegistryDataService";
+import type {CachedRegistryData, Registry, RegistryType} from "@/domain/Registry";
 import i18n from "@/i18n/i18n";
 import Alert from "@/component/ui/Alert";
 import Badge from "@/component/ui/Badge";

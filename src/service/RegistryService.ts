@@ -1,31 +1,15 @@
-import {LocalStorageService} from '@/service/LocalStorageService';
-import {LogService} from "@/service/LogService.ts";
+import {RegistryRepository} from '@/repository/RegistryRepository';
+import {Logger} from '@/infrastructure/logging/Logger';
 import {RegistryDataService} from "@/service/RegistryDataService.ts";
-
-/**
- * Registry type options
- */
-export type RegistryType = 'fusam' | 'aurora';
-
-/**
- * Registry interface
- * Represents a mod registry with a unique ID, URL, and type
- */
-export interface Registry {
-  id: string;
-  url: string;
-  type: RegistryType;
-  createdAt: number;
-  updatedAt: number;
-  isPreset?: boolean;
-}
+import type {Registry, RegistryType} from '@/domain/Registry';
 
 /**
  * Registry Service
- * Manages mod registries with CRUD operations
+ * Manages mod registries with CRUD operations; persistence of user registries
+ * is delegated to {@link RegistryRepository}.
  */
 export class RegistryService {
-  private static readonly STORAGE_KEY = 'bmm_registries';
+  private static readonly repo = new RegistryRepository();
 
   /**
    * Preset registry URLs that cannot be deleted or modified
@@ -63,16 +47,11 @@ export class RegistryService {
   }
 
   /**
-   * Get all registries
-   * @returns Array of all registries
+   * Get all user-added registries
+   * @returns Array of user registries
    */
   static getAllUser(): Registry[] {
-    let registries = LocalStorageService.getItem<Registry[]>(this.STORAGE_KEY);
-    if (registries == null) {
-      registries = []
-      LocalStorageService.setItem(this.STORAGE_KEY, registries);
-    }
-    return registries;
+    return this.repo.getAll();
   }
 
   /**
@@ -93,7 +72,7 @@ export class RegistryService {
    */
   static add(url: string, type: RegistryType = 'fusam'): Registry | null {
     if (!this.isValidUrl(url)) {
-      LogService.error('Invalid URL format');
+      Logger.error('Invalid URL format');
       return null;
     }
 
@@ -101,7 +80,7 @@ export class RegistryService {
 
     // Check for duplicate URLs
     if (registries.some(r => r.url === url)) {
-      LogService.error('Registry URL already exists');
+      Logger.error('Registry URL already exists');
       return null;
     }
 
@@ -114,11 +93,10 @@ export class RegistryService {
       updatedAt: now,
     };
 
-    registries.push(newRegistry);
-    LocalStorageService.setItem(this.STORAGE_KEY, registries);
+    this.repo.upsert(newRegistry);
     RegistryDataService.fetchRegistry(newRegistry)
       .catch(error => {
-        LogService.error('Error fetching registry:', error);
+        Logger.error('Error fetching registry:', error);
       });
     return newRegistry;
   }
@@ -132,7 +110,7 @@ export class RegistryService {
    */
   static update(id: string, url: string, type?: RegistryType): Registry | null {
     if (!this.isValidUrl(url)) {
-      LogService.error('Invalid URL format');
+      Logger.error('Invalid URL format');
       return null;
     }
 
@@ -140,30 +118,33 @@ export class RegistryService {
     const index = registries.findIndex(r => r.id === id);
 
     if (index === -1) {
-      LogService.error('Registry not found');
+      Logger.error('Registry not found');
       return null;
     }
 
     // Check for duplicate URLs (excluding current registry)
     if (registries.some(r => r.id !== id && r.url === url)) {
-      LogService.error('Registry URL already exists');
+      Logger.error('Registry URL already exists');
       return null;
     }
 
-    registries[index].url = url.trim();
+    const updated: Registry = {
+      ...registries[index],
+      url: url.trim(),
+      updatedAt: Date.now(),
+    };
     if (type !== undefined) {
-      registries[index].type = type;
+      updated.type = type;
     }
-    registries[index].updatedAt = Date.now();
 
-    LocalStorageService.setItem(this.STORAGE_KEY, registries);
+    this.repo.upsert(updated);
 
-    RegistryDataService.fetchRegistry(registries[index])
+    RegistryDataService.fetchRegistry(updated)
       .catch(error => {
-        LogService.error('Error fetching registry:', error);
+        Logger.error('Error fetching registry:', error);
       });
 
-    return registries[index];
+    return updated;
   }
 
   /**
@@ -172,15 +153,11 @@ export class RegistryService {
    * @returns true if successful, false otherwise
    */
   static delete(id: string): boolean {
-    const registries = this.getAllUser();
-    const filteredRegistries = registries.filter(r => r.id !== id);
-
-    if (filteredRegistries.length === registries.length) {
-      LogService.error('Registry not found');
+    if (!this.repo.removeByKey(id)) {
+      Logger.error('Registry not found');
       return false;
     }
 
-    LocalStorageService.setItem(this.STORAGE_KEY, filteredRegistries);
     return true;
   }
 
@@ -189,7 +166,7 @@ export class RegistryService {
    * @returns true if successful, false otherwise
    */
   static deleteAll(): boolean {
-    LocalStorageService.setItem(this.STORAGE_KEY, []);
+    this.repo.clear();
     return true;
   }
 
@@ -219,4 +196,3 @@ export class RegistryService {
     }
   }
 }
-

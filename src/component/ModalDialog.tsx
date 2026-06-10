@@ -1,4 +1,4 @@
-import type {ModalState} from "@/service/ModalService.ts";
+import type {ModalState} from "@/ui/store/ModalStore.ts";
 import {Component} from "preact";
 import Button from "@/component/ui/Button";
 import CloseButton from "@/component/ui/CloseButton";

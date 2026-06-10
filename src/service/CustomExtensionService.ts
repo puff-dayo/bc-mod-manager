@@ -1,34 +1,14 @@
-import {LocalStorageService} from '@/service/LocalStorageService';
-import {LogService} from '@/service/LogService';
-
-export type CustomExtensionType = 'script' | 'module' | 'eval';
-
-/**
- * Custom Extension Definition
- * Allows users to add their own extensions (including local development ones)
- */
-export interface CustomExtension {
-  id: string;                       // Unique ID for the custom extension
-  name: string;                     // Display name
-  description: string;              // Description
-  author: string;                   // Author name
-  sourceUrl: string;                // URL to the extension script
-  type: CustomExtensionType;        // Script type
-  icon?: string;                    // Optional icon URL
-  repository?: string;              // Optional repository URL
-  website?: string;                 // Optional website URL
-  tags?: string[];                  // Optional tags
-  createdAt: number;                // Timestamp when added
-  updatedAt: number;                // Timestamp when last updated
-}
+import {CustomExtensionRepository} from '@/repository/CustomExtensionRepository';
+import {Logger} from '@/infrastructure/logging/Logger';
+import type {CustomExtension} from '@/domain/CustomExtension';
 
 /**
  * Custom Extension Service
- * Manages user-defined custom extensions
+ * Manages user-defined custom extensions (business logic over the repository).
  */
 export class CustomExtensionService {
-  private static readonly STORAGE_KEY = 'bmm_custom_extensions';
   private static readonly CUSTOM_REGISTRY_ID = '__custom__';
+  private static readonly repo = new CustomExtensionRepository();
 
   /**
    * Get the special registry ID for custom extensions
@@ -41,16 +21,14 @@ export class CustomExtensionService {
    * Get all custom extensions
    */
   static getAll(): CustomExtension[] {
-    const extensions = LocalStorageService.getItem<CustomExtension[]>(this.STORAGE_KEY);
-    return extensions || [];
+    return this.repo.getAll();
   }
 
   /**
    * Get a custom extension by ID
    */
   static get(id: string): CustomExtension | null {
-    const extensions = this.getAll();
-    return extensions.find(ext => ext.id === id) || null;
+    return this.repo.findByKey(id);
   }
 
   /**
@@ -60,25 +38,20 @@ export class CustomExtensionService {
     try {
       // Validate required fields
       if (!extension.name || !extension.sourceUrl) {
-        LogService.error('CustomExtensionService: Name and source URL are required');
+        Logger.error('CustomExtensionService: Name and source URL are required');
         return null;
       }
 
       // Validate URL format
       if (!this.isValidUrl(extension.sourceUrl)) {
-        LogService.error('CustomExtensionService: Invalid source URL format');
+        Logger.error('CustomExtensionService: Invalid source URL format');
         return null;
       }
-
-      const extensions = this.getAll();
-
-      // Generate unique ID
-      const id = this.generateId();
 
       const now = Date.now();
       const newExtension: CustomExtension = {
         ...extension,
-        id,
+        id: this.generateId(),
         author: extension.author || 'Unknown',
         description: extension.description || '',
         type: extension.type || 'script',
@@ -86,13 +59,12 @@ export class CustomExtensionService {
         updatedAt: now,
       };
 
-      extensions.push(newExtension);
-      LocalStorageService.setItem(this.STORAGE_KEY, extensions);
+      this.repo.upsert(newExtension);
 
-      LogService.info(`CustomExtensionService: Added custom extension: ${newExtension.name}`);
+      Logger.info(`CustomExtensionService: Added custom extension: ${newExtension.name}`);
       return newExtension;
     } catch (error) {
-      LogService.error('CustomExtensionService: Error adding custom extension', error);
+      Logger.error('CustomExtensionService: Error adding custom extension', error);
       return null;
     }
   }
@@ -102,33 +74,31 @@ export class CustomExtensionService {
    */
   static update(id: string, updates: Partial<Omit<CustomExtension, 'id' | 'createdAt' | 'updatedAt'>>): CustomExtension | null {
     try {
-      const extensions = this.getAll();
-      const index = extensions.findIndex(ext => ext.id === id);
+      const existing = this.repo.findByKey(id);
 
-      if (index === -1) {
-        LogService.error('CustomExtensionService: Extension not found');
+      if (!existing) {
+        Logger.error('CustomExtensionService: Extension not found');
         return null;
       }
 
       // Validate URL if being updated
       if (updates.sourceUrl && !this.isValidUrl(updates.sourceUrl)) {
-        LogService.error('CustomExtensionService: Invalid source URL format');
+        Logger.error('CustomExtensionService: Invalid source URL format');
         return null;
       }
 
       const updatedExtension: CustomExtension = {
-        ...extensions[index],
+        ...existing,
         ...updates,
         updatedAt: Date.now(),
       };
 
-      extensions[index] = updatedExtension;
-      LocalStorageService.setItem(this.STORAGE_KEY, extensions);
+      this.repo.upsert(updatedExtension);
 
-      LogService.info(`CustomExtensionService: Updated custom extension: ${updatedExtension.name}`);
+      Logger.info(`CustomExtensionService: Updated custom extension: ${updatedExtension.name}`);
       return updatedExtension;
     } catch (error) {
-      LogService.error('CustomExtensionService: Error updating custom extension', error);
+      Logger.error('CustomExtensionService: Error updating custom extension', error);
       return null;
     }
   }
@@ -138,19 +108,15 @@ export class CustomExtensionService {
    */
   static remove(id: string): boolean {
     try {
-      const extensions = this.getAll();
-      const filtered = extensions.filter(ext => ext.id !== id);
-
-      if (filtered.length === extensions.length) {
-        LogService.error('CustomExtensionService: Extension not found');
+      if (!this.repo.removeByKey(id)) {
+        Logger.error('CustomExtensionService: Extension not found');
         return false;
       }
 
-      LocalStorageService.setItem(this.STORAGE_KEY, filtered);
-      LogService.info(`CustomExtensionService: Removed custom extension: ${id}`);
+      Logger.info(`CustomExtensionService: Removed custom extension: ${id}`);
       return true;
     } catch (error) {
-      LogService.error('CustomExtensionService: Error removing custom extension', error);
+      Logger.error('CustomExtensionService: Error removing custom extension', error);
       return false;
     }
   }
@@ -197,8 +163,8 @@ export class CustomExtensionService {
    * Clear all custom extensions
    */
   static clearAll(): void {
-    LocalStorageService.setItem(this.STORAGE_KEY, []);
-    LogService.info('CustomExtensionService: Cleared all custom extensions');
+    this.repo.clear();
+    Logger.info('CustomExtensionService: Cleared all custom extensions');
   }
 
   /**

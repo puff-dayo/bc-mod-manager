@@ -1,5 +1,6 @@
 import {Component} from "preact";
-import {type LogEntry, type LogLevel, LogService} from "@/service/LogService";
+import {Logger, type LogEntry, type LogLevel} from "@/infrastructure/logging/Logger";
+import {LogService} from "@/service/LogService";
 import i18n from "@/i18n/i18n";
 import {formatData} from "@/component/ui/format";
 import Badge, {type BadgeVariant} from "@/component/ui/Badge";
@@ -52,7 +53,7 @@ export default class LogManagerPage extends Component<{}, LogManagerState> {
   }
 
   loadLogs = () => {
-    const logs = LogService.getAllLogs();
+    const logs = Logger.getAllLogs();
     this.setState({logs});
   };
 
@@ -88,7 +89,7 @@ export default class LogManagerPage extends Component<{}, LogManagerState> {
 
   handleClearLogs = () => {
     if (confirm(i18n('confirm-clear-logs'))) {
-      LogService.clearLogs();
+      Logger.clearLogs();
       this.loadLogs();
     }
   };
@@ -153,7 +154,7 @@ export default class LogManagerPage extends Component<{}, LogManagerState> {
   render() {
     const {filter, searchQuery, autoRefresh, debugMethods, isDownloading} = this.state;
     const filteredLogs = this.getFilteredLogs();
-    const stats = LogService.getLogStats();
+    const stats = Logger.getLogStats();
 
     return (
       <Page size="xl">

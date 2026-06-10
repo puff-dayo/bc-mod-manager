@@ -1,19 +1,4 @@
-/**
- * Log Level
- */
-export type LogLevel = 'DEBUG' | 'INFO' | 'WARN' | 'ERROR';
-
-
-/**
- * Log Entry
- */
-export interface LogEntry {
-  id: string;
-  timestamp: number;
-  level: LogLevel;
-  message: string;
-  data?: any;
-}
+import {Logger} from "@/infrastructure/logging/Logger";
 
 /**
  * Debug Method (Crash Reporter Generator)
@@ -25,11 +10,13 @@ interface DebugMethod {
 
 /**
  * Log Service
- * Manages application logs and crash reporters (in-memory only)
+ *
+ * Application-level logging features built on top of the {@link Logger}
+ * infrastructure: a registry of debug methods (crash-reporter generators) and
+ * crash-report assembly/download. Low-level logging lives in {@link Logger};
+ * the logging delegations below exist only for callers not yet migrated to it.
  */
 export class LogService {
-  private static readonly MAX_LOGS = 1000; // Maximum number of logs to keep
-  private static logs: LogEntry[] = [];
   private static debugMethods = new Map<string, DebugMethod>();
 
   /**
@@ -39,7 +26,7 @@ export class LogService {
    */
   static registerDebugMethod(name: string, method: () => string | Promise<string>): void {
     this.debugMethods.set(name, {name, method});
-    this.log('DEBUG', `Debug method registered: ${name}`);
+    Logger.debug(`Debug method registered: ${name}`);
   }
 
   /**
@@ -48,7 +35,7 @@ export class LogService {
    */
   static unregisterDebugMethod(name: string): void {
     if (this.debugMethods.delete(name)) {
-      this.log('DEBUG', `Debug method unregistered: ${name}`);
+      Logger.debug(`Debug method unregistered: ${name}`);
     }
   }
 
@@ -74,7 +61,7 @@ export class LogService {
       return result;
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
-      this.log('ERROR', `Failed to execute debug method: ${name}`, {error: errorMsg});
+      Logger.error(`Failed to execute debug method: ${name}`, {error: errorMsg});
       throw error;
     }
   }
@@ -91,118 +78,11 @@ export class LogService {
       } catch (error) {
         const errorMsg = error instanceof Error ? error.message : String(error);
         results[name] = `ERROR: ${errorMsg}`;
-        this.log('ERROR', `Failed to execute debug method: ${name}`, {error: errorMsg});
+        Logger.error(`Failed to execute debug method: ${name}`, {error: errorMsg});
       }
     }
 
     return results;
-  }
-
-  /**
-   * Add a log entry
-   * @param level - Log level
-   * @param message - Log message
-   * @param data - Optional additional data
-   */
-  static log(level: LogLevel, message: string, data?: any): void {
-    const entry: LogEntry = {
-      id: `log_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      timestamp: Date.now(),
-      level,
-      message,
-      data,
-    };
-
-    this.logs.push(entry);
-
-    // Keep only the last MAX_LOGS entries
-    if (this.logs.length > this.MAX_LOGS) {
-      this.logs.splice(0, this.logs.length - this.MAX_LOGS);
-    }
-
-    // Also log to console
-    const consoleMsg = `[${level}] ${message}`;
-    switch (level) {
-      case 'DEBUG':
-        console.debug(consoleMsg, data);
-        break;
-      case 'INFO':
-        console.info(consoleMsg, data);
-        break;
-      case 'WARN':
-        console.warn(consoleMsg, data);
-        break;
-      case 'ERROR':
-        console.error(consoleMsg, data);
-        break;
-    }
-  }
-
-  /**
-   * Convenience methods for different log levels
-   */
-  static debug(message: string, data?: any): void {
-    this.log('DEBUG', message, data);
-  }
-
-  static info(message: string, data?: any): void {
-    this.log('INFO', message, data);
-  }
-
-  static warn(message: string, data?: any): void {
-    this.log('WARN', message, data);
-  }
-
-  static error(message: string, data?: any): void {
-    this.log('ERROR', message, data);
-  }
-
-  /**
-   * Get all logs
-   */
-  static getAllLogs(): LogEntry[] {
-    return [...this.logs]; // Return a copy to prevent external modification
-  }
-
-  /**
-   * Get logs filtered by level
-   */
-  static getLogsByLevel(level: LogLevel): LogEntry[] {
-    return this.logs.filter(log => log.level === level);
-  }
-
-  /**
-   * Get logs within a time range
-   */
-  static getLogsByTimeRange(startTime: number, endTime: number): LogEntry[] {
-    return this.logs.filter(log => log.timestamp >= startTime && log.timestamp <= endTime);
-  }
-
-  /**
-   * Clear all logs
-   */
-  static clearLogs(): void {
-    this.logs = [];
-  }
-
-  /**
-   * Export logs as JSON string
-   */
-  static exportLogsAsJSON(): string {
-    const logs = this.getAllLogs();
-    return JSON.stringify(logs, null, 2);
-  }
-
-  /**
-   * Export logs as text
-   */
-  static exportLogsAsText(): string {
-    const logs = this.getAllLogs();
-    return logs.map(log => {
-      const date = new Date(log.timestamp).toISOString();
-      const dataStr = log.data ? ` | Data: ${JSON.stringify(log.data)}` : '';
-      return `[${date}] [${log.level}] ${log.message}${dataStr}`;
-    }).join('\n');
   }
 
   /**
@@ -239,7 +119,7 @@ export class LogService {
     report.push('LOGS');
     report.push('='.repeat(80));
     report.push('');
-    report.push(this.exportLogsAsText());
+    report.push(Logger.exportLogsAsText());
 
     return report.join('\n');
   }
@@ -260,31 +140,11 @@ export class LogService {
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
 
-      this.info('Crash report downloaded successfully');
+      Logger.info('Crash report downloaded successfully');
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
-      this.error('Failed to download crash report', {error: errorMsg});
+      Logger.error('Failed to download crash report', {error: errorMsg});
       throw error;
     }
   }
-
-  /**
-   * Get log statistics
-   */
-  static getLogStats(): Record<LogLevel, number> {
-    const logs = this.getAllLogs();
-    const stats: Record<LogLevel, number> = {
-      ['DEBUG']: 0,
-      ['INFO']: 0,
-      ['WARN']: 0,
-      ['ERROR']: 0,
-    };
-
-    logs.forEach(log => {
-      stats[log.level]++;
-    });
-
-    return stats;
-  }
 }
-

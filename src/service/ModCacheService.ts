@@ -1,5 +1,6 @@
-import {LocalStorageService} from '@/service/LocalStorageService';
-import {LogService} from '@/service/LogService';
+import {ModVersionPinRepository} from '@/repository/ModVersionPinRepository';
+import {Observable} from '@/infrastructure/pubsub/Observable';
+import {Logger} from '@/infrastructure/logging/Logger';
 
 /**
  * Per-mod runtime cache state. Mirrors the loader version bridge in
@@ -17,7 +18,6 @@ interface ModCacheRuntime {
 
 type CacheListener = () => void;
 
-const VERSIONS_STORAGE_KEY = 'bmm_mod_loader_versions';
 // Run the background update check shortly after the mod has been injected so it
 // never blocks (or competes with) the initial load.
 const VALIDATE_DELAY_MS = 1500;
@@ -38,12 +38,17 @@ const VALIDATE_DELAY_MS = 1500;
 export class ModCacheService {
   // In-memory per-mod runtime state, keyed by modKey (`${modId}_${registryId}`).
   private static runtime: Map<string, ModCacheRuntime> = new Map();
-  private static listeners: Set<CacheListener> = new Set();
   private static scheduledValidations: Map<string, number> = new Map();
   // A token, fixed for the lifetime of this page, used to force a fresh fetch
   // when caching is disabled — stable within the session so a preload and its
   // load resolve to the same URL, but new on the next visit.
   private static sessionToken: string | null = null;
+  // Persisted `sourceUrl -> pinned content hash` map.
+  private static readonly pins = new ModVersionPinRepository();
+  private static readonly observable = new Observable<void>({
+    emitOnSubscribe: false,
+    onListenerError: (error) => Logger.error('ModCacheService: listener threw', error),
+  });
 
   /**
    * Decide how to load a mod source and produce the URL to request.
@@ -175,10 +180,7 @@ export class ModCacheService {
    * dropped). Returns an unsubscribe function.
    */
   static subscribe(listener: CacheListener): () => void {
-    this.listeners.add(listener);
-    return () => {
-      this.listeners.delete(listener);
-    };
+    return this.observable.subscribe(listener);
   }
 
   /**
@@ -239,32 +241,15 @@ export class ModCacheService {
     }
   }
 
-  private static getVersionMap(): Record<string, string> {
-    return LocalStorageService.getItem<Record<string, string>>(VERSIONS_STORAGE_KEY) || {};
-  }
-
   private static getPinnedVersion(sourceUrl: string): string | null {
-    const map = this.getVersionMap();
-    return Object.prototype.hasOwnProperty.call(map, sourceUrl) ? map[sourceUrl] : null;
+    return this.pins.get(sourceUrl);
   }
 
   private static setPinnedVersion(sourceUrl: string, hash: string | null): void {
-    const map = this.getVersionMap();
-    if (hash) {
-      map[sourceUrl] = hash;
-    } else {
-      delete map[sourceUrl];
-    }
-    LocalStorageService.setItem(VERSIONS_STORAGE_KEY, map);
+    this.pins.set(sourceUrl, hash);
   }
 
   private static notify(): void {
-    this.listeners.forEach(listener => {
-      try {
-        listener();
-      } catch (error) {
-        LogService.error('ModCacheService: listener threw', error);
-      }
-    });
+    this.observable.notify(undefined);
   }
 }
