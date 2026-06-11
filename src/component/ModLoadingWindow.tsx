@@ -2,6 +2,7 @@ import {Component} from "preact";
 import i18n from "@/i18n/i18n.ts";
 import cn from "@/util/cn.ts";
 import Icon from "@/component/ui/Icon.tsx";
+import Badge from "@/component/ui/Badge.tsx";
 import {ModLoaderService} from "@/service/ModLoaderService.ts";
 import {ModCacheService} from "@/service/ModCacheService.ts";
 import {LoaderVersion} from "@/infrastructure/bridge/LoaderVersion";
@@ -21,6 +22,7 @@ interface ModLoadingWindowState {
   outdated: boolean;          // the mod-loader build itself is stale
   modsOutdated: boolean;      // one or more cached mods are stale
   modsOutdatedCount: number;
+  outdatedModKeys: string[];
   sdkHijacked: boolean;       // BC's SDK initialized before ours with mods already registered
   sdkHijackedCount: number;
   dismissed: boolean;
@@ -62,6 +64,7 @@ export default class ModLoadingWindow extends Component<{}, ModLoadingWindowStat
       outdated: LoaderVersion.isOutdated(),
       modsOutdated: ModCacheService.isAnyOutdated(),
       modsOutdatedCount: ModCacheService.getOutdatedCount(),
+      outdatedModKeys: ModCacheService.getOutdatedModKeys(),
       sdkHijacked: SdkStateService.isHijacked(),
       sdkHijackedCount: SdkStateService.getHijackInfo()?.registeredMods.length ?? 0,
       dismissed: false,
@@ -90,13 +93,14 @@ export default class ModLoadingWindow extends Component<{}, ModLoadingWindowStat
     this.unsubscribeModCache = ModCacheService.subscribe(() => {
       const modsOutdated = ModCacheService.isAnyOutdated();
       const modsOutdatedCount = ModCacheService.getOutdatedCount();
+      const outdatedModKeys = ModCacheService.getOutdatedModKeys();
       if (modsOutdated) {
         // Bring the window back so a stale mod detected after the initial load
         // still reaches the user.
         this.clearHideTimer();
-        this.setState({modsOutdated, modsOutdatedCount, dismissed: false});
+        this.setState({modsOutdated, modsOutdatedCount, outdatedModKeys, dismissed: false});
       } else {
-        this.setState({modsOutdated, modsOutdatedCount});
+        this.setState({modsOutdated, modsOutdatedCount, outdatedModKeys});
       }
     });
 
@@ -150,7 +154,7 @@ export default class ModLoadingWindow extends Component<{}, ModLoadingWindowStat
   }
 
   render() {
-    const {progress, outdated, modsOutdated, modsOutdatedCount, sdkHijacked, sdkHijackedCount, dismissed} = this.state;
+    const {progress, outdated, modsOutdated, modsOutdatedCount, outdatedModKeys, sdkHijacked, sdkHijackedCount, dismissed} = this.state;
     if (dismissed) {
       return null;
     }
@@ -162,6 +166,7 @@ export default class ModLoadingWindow extends Component<{}, ModLoadingWindowStat
     const percent = progress.total > 0
       ? Math.round((progress.settled / progress.total) * 100)
       : (outdated || modsOutdated ? 100 : 0);
+    const outdatedModKeySet = new Set(outdatedModKeys);
 
     return (
       <div className="fixed bottom-6 right-6 z-[60] w-[20rem] max-w-[calc(100vw-3rem)]">
@@ -248,15 +253,23 @@ export default class ModLoadingWindow extends Component<{}, ModLoadingWindowStat
             {progress.total > 0 && (
               <ul className="m-0 mt-2 flex max-h-52 list-none flex-col overflow-y-auto p-0 pr-0.5">
                 {[...progress.entries]
-                  .sort((a, b) => STATUS_SORT[a.status] - STATUS_SORT[b.status])
-                  .map(entry => (
+                  .sort((a, b) => {
+                    const outdatedSort = Number(outdatedModKeySet.has(b.modKey)) - Number(outdatedModKeySet.has(a.modKey));
+                    return outdatedSort || STATUS_SORT[a.status] - STATUS_SORT[b.status];
+                  })
+                  .map(entry => {
+                    const modOutdated = outdatedModKeySet.has(entry.modKey);
+                    return (
                     <li
                       key={entry.modKey}
-                      className="flex min-w-0 items-baseline gap-1.5 px-1 py-[2px] text-[0.6875rem] hover:bg-bmm-surface-muted rounded"
+                      className={cn(
+                        'flex min-w-0 items-baseline gap-1.5 rounded px-1 py-[2px] text-[0.6875rem] hover:bg-bmm-surface-muted',
+                        modOutdated && 'bg-amber-50 hover:bg-amber-50',
+                      )}
                     >
                       <span className={cn(
                         'mt-[3px] h-1.5 w-1.5 shrink-0 rounded-full',
-                        STATUS_DOT[entry.status],
+                        modOutdated ? 'bg-amber-500' : STATUS_DOT[entry.status],
                         entry.status === 'loading' && 'animate-pulse',
                       )}/>
                       <span
@@ -267,6 +280,15 @@ export default class ModLoadingWindow extends Component<{}, ModLoadingWindowStat
                         )}
                         title={entry.name}
                       >{entry.name}</span>
+                      {modOutdated && (
+                        <Badge
+                          variant="warning"
+                          className="shrink-0 px-1.5 py-0 text-[0.625rem]"
+                          title={i18n('loading-mod-outdated-detail')}
+                        >
+                          {i18n('loading-mod-outdated-badge')}
+                        </Badge>
+                      )}
                       {entry.status === 'error' && entry.error && (
                         <span className="shrink-0 truncate text-red-500" title={entry.error}>
                           — {entry.error}
@@ -278,7 +300,8 @@ export default class ModLoadingWindow extends Component<{}, ModLoadingWindowStat
                         </span>
                       )}
                     </li>
-                  ))}
+                  );
+                })}
               </ul>
             )}
           </div>

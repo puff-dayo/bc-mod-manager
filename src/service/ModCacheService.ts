@@ -171,6 +171,17 @@ export class ModCacheService {
     return count;
   }
 
+  /** Keys of loaded mods whose cached build is older than the latest. */
+  static getOutdatedModKeys(): string[] {
+    const keys: string[] = [];
+    this.runtime.forEach((entry, modKey) => {
+      if (entry.loadedVersion != null && entry.latestVersion != null && entry.loadedVersion !== entry.latestVersion) {
+        keys.push(modKey);
+      }
+    });
+    return keys;
+  }
+
   static isAnyOutdated(): boolean {
     return this.getOutdatedCount() > 0;
   }
