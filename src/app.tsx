@@ -13,6 +13,7 @@ import AppLauncher, {type AppLauncherItem} from "@/component/AppLauncher.tsx";
 import AppBackdrop from "@/component/ui/AppBackdrop.tsx";
 import AppShell from "@/component/ui/AppShell.tsx";
 import CloseButton from "@/component/ui/CloseButton.tsx";
+import {BcGameState} from "@/service/BcGameState.ts";
 
 type PageType = 'mod-manager' | 'registry-manager' | 'log-viewer' | 'settings' | 'modal-test' | null;
 
@@ -37,7 +38,7 @@ export default class App extends Component<{}, AppState> {
 
   componentDidMount() {
     this.screenTimer = window.setInterval(() => {
-      const targetState = typeof CurrentScreen == 'undefined' || CurrentScreen === "Preference" || CurrentScreen === "Login";
+      const targetState = BcGameState.isLoginScreen() || BcGameState.isPreferenceScreen();
       if (this.state.showButton !== targetState) {
         this.setState({showButton: targetState});
       }

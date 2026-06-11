@@ -2,6 +2,7 @@ import { Component } from 'preact';
 import i18n from '@/i18n/i18n';
 import type { SdkCrashInfo } from '@/service/SdkCrashStore';
 import { SdkCrashStore } from '@/service/SdkCrashStore';
+import { formatCrashReport, uploadToPastesDev } from '@/service/PasteService';
 import Badge from '@/component/ui/Badge';
 import Button from '@/component/ui/Button';
 import CloseButton from '@/component/ui/CloseButton';
@@ -10,14 +11,31 @@ import ModalBackdrop from '@/component/ui/ModalBackdrop';
 
 interface Props {
   crash: SdkCrashInfo;
+  queueLength: number;
 }
+
+type UploadState = 'idle' | 'uploading' | 'success' | 'error';
 
 interface State {
   stackExpanded: boolean;
+  modsExpanded: boolean;
+  uploadState: UploadState;
+  pasteUrl: string;
 }
 
 export default class SdkCrashDialog extends Component<Props, State> {
-  state: State = { stackExpanded: false };
+  state: State = {
+    stackExpanded: true,
+    modsExpanded: false,
+    uploadState: 'idle',
+    pasteUrl: '',
+  };
+
+  componentDidUpdate(prevProps: Props) {
+    if (prevProps.crash.id !== this.props.crash.id) {
+      this.setState({ stackExpanded: true, modsExpanded: false, uploadState: 'idle', pasteUrl: '' });
+    }
+  }
 
   private handleDismiss = () => {
     SdkCrashStore.dismiss(this.props.crash.id);
@@ -27,13 +45,36 @@ export default class SdkCrashDialog extends Component<Props, State> {
     this.setState(s => ({ stackExpanded: !s.stackExpanded }));
   };
 
+  private toggleMods = () => {
+    this.setState(s => ({ modsExpanded: !s.modsExpanded }));
+  };
+
+  private handleUpload = async () => {
+    const { uploadState, pasteUrl } = this.state;
+
+    if (uploadState === 'success' && pasteUrl) {
+      await navigator.clipboard.writeText(pasteUrl).catch(() => {});
+      return;
+    }
+
+    if (uploadState === 'uploading') return;
+
+    this.setState({ uploadState: 'uploading' });
+    try {
+      const url = await uploadToPastesDev(formatCrashReport(this.props.crash));
+      this.setState({ uploadState: 'success', pasteUrl: url });
+    } catch {
+      this.setState({ uploadState: 'error' });
+    }
+  };
+
   render() {
-    const { crash } = this.props;
-    const { stackExpanded } = this.state;
+    const { crash, queueLength } = this.props;
+    const { stackExpanded, modsExpanded, uploadState, pasteUrl } = this.state;
 
     return (
       <ModalBackdrop className="z-[65]">
-        <div className="flex w-[min(92vw,540px)] max-h-[min(90vh,720px)] flex-col overflow-hidden rounded-lg border border-red-200 bg-bmm-surface shadow-bmm-panel ring-1 ring-slate-950/5">
+        <div className="flex w-[min(92vw,720px)] max-h-[min(90vh,800px)] flex-col overflow-hidden rounded-lg border border-red-200 bg-bmm-surface shadow-bmm-panel ring-1 ring-slate-950/5">
 
           {/* Header */}
           <div className="flex items-center justify-between gap-3 border-b border-red-100 bg-red-50 px-5 py-3.5">
@@ -42,6 +83,9 @@ export default class SdkCrashDialog extends Component<Props, State> {
               <h2 className="m-0 text-sm font-bold leading-tight">
                 {i18n(crash.type === 'hook' ? 'crash-title-hook' : 'crash-title-patch')}
               </h2>
+              {queueLength > 1 && (
+                <Badge variant="danger">{queueLength}</Badge>
+              )}
             </div>
             <CloseButton onClick={this.handleDismiss} variant="dialog"/>
           </div>
@@ -67,7 +111,7 @@ export default class SdkCrashDialog extends Component<Props, State> {
               </div>
             </div>
 
-            {/* Stack trace (collapsible) */}
+            {/* Stack trace (collapsible, default expanded) */}
             {crash.stackFrames.length > 0 && (
               <div>
                 <button
@@ -85,10 +129,58 @@ export default class SdkCrashDialog extends Component<Props, State> {
                 )}
               </div>
             )}
+
+            {/* Loaded mods (collapsible, default collapsed) */}
+            {crash.loadedMods.length > 0 && (
+              <div>
+                <button
+                  type="button"
+                  onClick={this.toggleMods}
+                  className="flex items-center gap-1.5 text-xs font-bold text-bmm-muted hover:text-bmm-ink transition-colors"
+                >
+                  <Icon name="chevron" open={modsExpanded} className="text-[0.65rem]"/>
+                  {i18n('crash-label-loaded-mods')}
+                  <span className="ml-1 text-bmm-muted font-normal">({crash.loadedMods.length})</span>
+                </button>
+                {modsExpanded && (
+                  <ul className="mt-2 m-0 flex max-h-48 list-none flex-col overflow-y-auto rounded-lg border border-bmm-border bg-bmm-surface-muted p-0">
+                    {crash.loadedMods.map(m => (
+                      <li key={m} className="border-b border-bmm-border px-3.5 py-1.5 text-[0.6875rem] text-bmm-muted last:border-b-0">
+                        {m}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
+
+            {/* Paste URL (shown after successful upload) */}
+            {uploadState === 'success' && pasteUrl && (
+              <div className="rounded-lg border border-bmm-border bg-bmm-surface-muted px-3.5 py-2.5 flex items-center gap-2">
+                <a
+                  href={pasteUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-1 text-xs text-bmm-accent truncate hover:underline"
+                >
+                  {pasteUrl}
+                </a>
+              </div>
+            )}
           </div>
 
           {/* Footer */}
-          <div className="flex justify-end border-t border-bmm-border bg-bmm-surface-raised px-5 py-3.5">
+          <div className="flex items-center justify-between border-t border-bmm-border bg-bmm-surface-raised px-5 py-3.5">
+            <Button
+              variant={uploadState === 'error' ? 'danger' : 'neutral'}
+              onClick={this.handleUpload}
+              disabled={uploadState === 'uploading'}
+            >
+              {uploadState === 'uploading' && i18n('crash-upload-uploading')}
+              {uploadState === 'success' && i18n('crash-upload-copy')}
+              {uploadState === 'error' && i18n('crash-upload-error')}
+              {uploadState === 'idle' && i18n('crash-button-upload')}
+            </Button>
             <Button variant="danger" onClick={this.handleDismiss}>
               {i18n('crash-button-dismiss')}
             </Button>

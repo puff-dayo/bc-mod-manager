@@ -8,6 +8,8 @@ export interface SdkCrashInfo {
   mod: string;
   errorMessage: string;
   stackFrames: string[];
+  /** Display names of mods that were loaded at the time of the crash */
+  loadedMods: string[];
 }
 
 let counter = 0;

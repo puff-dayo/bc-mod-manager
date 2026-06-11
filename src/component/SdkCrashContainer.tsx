@@ -23,6 +23,6 @@ export default class SdkCrashContainer extends Component<{}, State> {
     const { crashes } = this.state;
     if (crashes.length === 0) return null;
     // Show the oldest unacknowledged crash on top; the rest queue behind it.
-    return <SdkCrashDialog crash={crashes[0]}/>;
+    return <SdkCrashDialog crash={crashes[0]} queueLength={crashes.length}/>;
   }
 }

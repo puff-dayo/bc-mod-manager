@@ -4,6 +4,7 @@ import {SettingsService} from '@/service/SettingsService';
 import {Logger} from '@/infrastructure/logging/Logger';
 import {Observable} from '@/infrastructure/pubsub/Observable';
 import {ScriptInjector} from '@/infrastructure/dom/ScriptInjector';
+import {BcGameState} from '@/service/BcGameState';
 import type {ModLoadEntry, ModLoadProgress, ModLoadStatus, ModLoadType} from '@/domain/ModLoad';
 
 /**
@@ -18,7 +19,6 @@ export class ModLoaderService {
   private static hasDisabledMods: boolean = false;
   private static scheduledPreload: number | null = null;
   private static scheduledLoad: number | null = null;
-  private static characterEnterHookInstalled: boolean = false;
   private static loadProgress: Map<string, ModLoadEntry> = new Map();
   private static loadStarted: boolean = false;
   private static waitingForGame: boolean = false;
@@ -65,7 +65,7 @@ export class ModLoaderService {
     // pending even while we are still waiting for the game to become available.
     this.registerPendingMods();
 
-    if (typeof Player !== "undefined" && !!Player) {
+    if (BcGameState.canLoadMods()) {
       this.waitingForGame = false;
       this.notifyProgress();
       this.loadAllEnabledModsImpl();
@@ -73,12 +73,8 @@ export class ModLoaderService {
       this.waitingForGame = true;
       this.notifyProgress();
 
-      // Hook CharacterEnter via bcModSdk when available — fires once the player
-      // has fully logged in, which is more reliable than polling Player directly.
-      this.installCharacterEnterHook();
-
       this.scheduledLoad = setInterval(() => {
-        if (typeof Player !== "undefined" && !!Player) {
+        if (BcGameState.canLoadMods()) {
           this.onGameReady();
         }
       }, 5);
@@ -105,30 +101,6 @@ export class ModLoaderService {
     this.waitingForGame = false;
     this.notifyProgress();
     this.loadAllEnabledModsImpl();
-  }
-
-  private static installCharacterEnterHook(): void {
-    if (this.characterEnterHookInstalled) {
-      return;
-    }
-    const sdk = (window as any).bcModSdk;
-    if (!sdk || typeof sdk.hookFunction !== 'function') {
-      return;
-    }
-    try {
-      this.characterEnterHookInstalled = true;
-      sdk.hookFunction('CharacterEnter', 0, (args: unknown[], next: (...a: unknown[]) => unknown) => {
-        const result = next(args);
-        if (this.waitingForGame) {
-          Logger.info('ModLoaderService: CharacterEnter fired — starting mod load');
-          this.onGameReady();
-        }
-        return result;
-      });
-      Logger.debug('ModLoaderService: CharacterEnter hook installed');
-    } catch (err) {
-      Logger.warn('ModLoaderService: Failed to install CharacterEnter hook', err);
-    }
   }
 
   static preloadAllEnabledMods(): void {
@@ -398,7 +370,7 @@ export class ModLoaderService {
 
   private static preloadAllEnabledModsImpl(): void {
     const modsWithDetails = ModService.getAllModsWithDetails();
-    const enabledMods = modsWithDetails.filter(mod => mod.enabled && (mod.type === 'module' || mod.type === 'eval'));
+    const enabledMods = modsWithDetails.filter(mod => mod.enabled);
     enabledMods.forEach(mod => {
       this.preloadMod(mod.modId, mod.type, mod.registryId, mod.sourceUrl, mod.name, mod.selectedVersion, mod.noCacheBusting);
     });

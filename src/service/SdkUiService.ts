@@ -1,6 +1,8 @@
 import { ModalStore } from '@/ui/store/ModalStore';
 import { SdkStateService } from '@/service/SdkStateService';
 import { SdkCrashStore } from '@/service/SdkCrashStore';
+import { ModLoaderService } from '@/service/ModLoaderService';
+import { ModService } from '@/service/ModService';
 
 export function showSdkAlert(message: string): void {
   ModalStore.open({
@@ -24,6 +26,14 @@ export function reportSdkCrash(
   const frames = (error.stack ?? '')
     .split('\n')
     .filter(l => l.trim().startsWith('at '))
-    .slice(0, 8);
-  SdkCrashStore.push({ type, fn, mod, errorMessage: error.message, stackFrames: frames });
+    .slice(0, 20);
+
+  const loadedKeys = ModLoaderService.getLoadedMods();
+  const allMods = ModService.getAllModsWithDetails();
+  const loadedMods = loadedKeys.map(key => {
+    const found = allMods.find(m => `${m.modId}_${m.registryId}` === key);
+    return found ? `${found.name} (${found.selectedVersion ?? key})` : key;
+  });
+
+  SdkCrashStore.push({ type, fn, mod, errorMessage: error.message, stackFrames: frames, loadedMods });
 }

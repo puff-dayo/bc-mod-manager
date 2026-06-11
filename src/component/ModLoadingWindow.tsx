@@ -6,6 +6,7 @@ import {ModLoaderService} from "@/service/ModLoaderService.ts";
 import {ModCacheService} from "@/service/ModCacheService.ts";
 import {LoaderVersion} from "@/infrastructure/bridge/LoaderVersion";
 import {SdkStateService} from "@/service/SdkStateService.ts";
+import {BcGameState} from "@/service/BcGameState.ts";
 import type {ModLoadProgress, ModLoadStatus} from "@/domain/ModLoad";
 import {formatDuration} from "@/component/ui/format.ts";
 
@@ -23,11 +24,7 @@ interface ModLoadingWindowState {
   sdkHijacked: boolean;       // BC's SDK initialized before ours with mods already registered
   sdkHijackedCount: number;
   dismissed: boolean;
-  onLoginScreen: boolean;     // still on the BC login screen
-}
-
-function isLoginScreen(): boolean {
-  return typeof CurrentScreen === 'undefined' || CurrentScreen === 'Login';
+  loggedIn: boolean;          // BC account login has completed
 }
 
 const STATUS_DOT: Record<ModLoadStatus, string> = {
@@ -68,7 +65,7 @@ export default class ModLoadingWindow extends Component<{}, ModLoadingWindowStat
       sdkHijacked: SdkStateService.isHijacked(),
       sdkHijackedCount: SdkStateService.getHijackInfo()?.registeredMods.length ?? 0,
       dismissed: false,
-      onLoginScreen: isLoginScreen(),
+      loggedIn: BcGameState.isLoggedIn(),
     };
   }
 
@@ -112,14 +109,14 @@ export default class ModLoadingWindow extends Component<{}, ModLoadingWindowStat
 
     this.scheduleAutoHide(this.state.progress.finished);
 
-    // Poll CurrentScreen so we can defer auto-hide until the player has left
-    // the login screen.
+    // Mods load as soon as BC creates Player, but the startup window stays
+    // visible until the account login is complete.
     this.screenTimer = window.setInterval(() => {
-      const onLoginScreen = isLoginScreen();
-      if (onLoginScreen !== this.state.onLoginScreen) {
-        this.setState({onLoginScreen});
-        if (!onLoginScreen) {
-          this.scheduleAutoHide(this.state.progress.finished);
+      const loggedIn = BcGameState.isLoggedIn();
+      if (loggedIn !== this.state.loggedIn) {
+        this.setState({loggedIn});
+        if (loggedIn) {
+          this.scheduleAutoHide(this.state.progress.finished, loggedIn);
         }
       }
     }, 500);
@@ -290,8 +287,8 @@ export default class ModLoadingWindow extends Component<{}, ModLoadingWindowStat
     );
   }
 
-  private scheduleAutoHide(finished: boolean) {
-    if (finished && !this.state.onLoginScreen && this.hideTimer === null && !this.anyOutdated()) {
+  private scheduleAutoHide(finished: boolean, loggedIn = this.state.loggedIn || BcGameState.isLoggedIn()) {
+    if (finished && loggedIn && this.hideTimer === null && !this.anyOutdated()) {
       this.hideTimer = window.setTimeout(() => {
         this.hideTimer = null;
         this.setState({dismissed: true});
