@@ -169,7 +169,7 @@ export default class ModLoadingWindow extends Component<{}, ModLoadingWindowStat
     const outdatedModKeySet = new Set(outdatedModKeys);
 
     return (
-      <div className="fixed bottom-6 right-6 z-[60] w-[20rem] max-w-[calc(100vw-3rem)]">
+      <div className="fixed bottom-6 right-6 z-[60] w-[22rem] max-w-[calc(100vw-3rem)]">
         <div
           className="overflow-hidden rounded-lg border border-bmm-border bg-bmm-surface shadow-bmm-panel ring-1 ring-slate-950/5">
           <div
@@ -251,7 +251,7 @@ export default class ModLoadingWindow extends Component<{}, ModLoadingWindowStat
             )}
 
             {progress.total > 0 && (
-              <ul className="m-0 mt-2 flex max-h-52 list-none flex-col overflow-y-auto p-0 pr-0.5">
+              <ul className="m-0 mt-2 flex max-h-52 list-none flex-col gap-0.5 overflow-y-auto p-0 pr-0.5">
                 {[...progress.entries]
                   .sort((a, b) => {
                     const outdatedSort = Number(outdatedModKeySet.has(b.modKey)) - Number(outdatedModKeySet.has(a.modKey));
@@ -259,43 +259,49 @@ export default class ModLoadingWindow extends Component<{}, ModLoadingWindowStat
                   })
                   .map(entry => {
                     const modOutdated = outdatedModKeySet.has(entry.modKey);
+                    const entryDetail = this.entryDetailText(entry, modOutdated);
                     return (
                     <li
                       key={entry.modKey}
+                      title={entryDetail}
                       className={cn(
-                        'flex min-w-0 items-baseline gap-1.5 rounded px-1 py-[2px] text-[0.6875rem] hover:bg-bmm-surface-muted',
-                        modOutdated && 'bg-amber-50 hover:bg-amber-50',
+                        'grid min-w-0 grid-cols-[auto_minmax(0,1fr)_auto] gap-x-1.5 rounded px-1.5 py-1 text-[0.6875rem] leading-4 hover:bg-bmm-surface-muted',
+                        modOutdated && 'border border-amber-200/70 bg-amber-50/80 px-[5px] py-[3px] hover:bg-amber-50',
                       )}
                     >
                       <span className={cn(
-                        'mt-[3px] h-1.5 w-1.5 shrink-0 rounded-full',
+                        'mt-[5px] h-1.5 w-1.5 shrink-0 rounded-full',
                         modOutdated ? 'bg-amber-500' : STATUS_DOT[entry.status],
                         entry.status === 'loading' && 'animate-pulse',
                       )}/>
-                      <span
-                        className={cn(
-                          'min-w-0 truncate',
-                          entry.status === 'loaded' ? 'text-bmm-muted' : 'text-bmm-ink',
-                          entry.status === 'error' && 'font-semibold text-red-700',
+                      <div className="min-w-0">
+                        <div className="flex min-w-0 items-center gap-1.5">
+                          <span
+                            className={cn(
+                              'min-w-0 flex-1 truncate',
+                              entry.status === 'loaded' ? 'text-bmm-muted' : 'text-bmm-ink',
+                              entry.status === 'error' && 'font-semibold text-red-700',
+                            )}
+                            title={entryDetail}
+                          >{entry.name}</span>
+                          {modOutdated && (
+                            <Badge
+                              variant="warning"
+                              className="max-w-[5.75rem] shrink-0 overflow-hidden text-ellipsis px-1.5 py-0 text-[0.625rem]"
+                              title={entryDetail}
+                            >
+                              {i18n('loading-mod-outdated-badge')}
+                            </Badge>
+                          )}
+                        </div>
+                        {entry.status === 'error' && entry.error && (
+                          <div className="mt-0.5 truncate text-red-500" title={entryDetail}>
+                            {entry.error}
+                          </div>
                         )}
-                        title={entry.name}
-                      >{entry.name}</span>
-                      {modOutdated && (
-                        <Badge
-                          variant="warning"
-                          className="shrink-0 px-1.5 py-0 text-[0.625rem]"
-                          title={i18n('loading-mod-outdated-detail')}
-                        >
-                          {i18n('loading-mod-outdated-badge')}
-                        </Badge>
-                      )}
-                      {entry.status === 'error' && entry.error && (
-                        <span className="shrink-0 truncate text-red-500" title={entry.error}>
-                          — {entry.error}
-                        </span>
-                      )}
+                      </div>
                       {entry.durationMs !== undefined && entry.status !== 'error' && (
-                        <span className="ml-auto shrink-0 tabular-nums text-bmm-faint">
+                        <span className="self-start tabular-nums text-bmm-faint">
                           {formatDuration(entry.durationMs)}
                         </span>
                       )}
@@ -358,6 +364,34 @@ export default class ModLoadingWindow extends Component<{}, ModLoadingWindowStat
         : base;
     }
     return i18n('loading-in-progress');
+  }
+
+  private entryDetailText(entry: ModLoadProgress['entries'][number], modOutdated: boolean): string {
+    const lines = [
+      entry.name,
+      `${i18n('label-load-status')}: ${i18n(`loading-status-${entry.status}`)}`,
+    ];
+
+    if (entry.distribution) {
+      lines.push(`${i18n('label-selected-version')}: ${entry.distribution}`);
+    }
+    if (entry.loadType) {
+      lines.push(`${i18n('label-type')}: ${entry.loadType}`);
+    }
+    if (entry.durationMs !== undefined) {
+      lines.push(`${i18n('label-load-duration')}: ${formatDuration(entry.durationMs)}`);
+    }
+    if (modOutdated) {
+      lines.push(i18n('loading-mod-outdated-detail'));
+    }
+    if (entry.error) {
+      lines.push(`${i18n('label-error')}: ${entry.error}`);
+    }
+    if (entry.postLoadError) {
+      lines.push(`${i18n('label-post-load-error')}: ${entry.postLoadError}`);
+    }
+
+    return lines.join('\n');
   }
 
 }

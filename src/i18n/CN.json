@@ -136,6 +136,7 @@
   "label-loaded-mods": "已加载",
   "label-failed-mods": "加载失败",
   "label-load-status": "加载状态",
+  "label-load-duration": "加载耗时",
   "label-post-load-error": "加载后报错",
   "loading-outdated-title": "模组加载器有新版本",
   "loading-outdated-detail": "当前运行的是缓存的旧版本，请刷新页面以更新到最新版本。",
