@@ -5,7 +5,7 @@ import type {ModConfig} from "@/domain/Mod";
 import type {FusamAddon} from "@/domain/Registry";
 import type {ModLoadEntry, ModLoadStatus} from "@/domain/ModLoad";
 import i18n, {currentLanguage} from "@/i18n/i18n.ts";
-import {formatDuration, formatInitial, formatLocalizedName, formatSearchText} from "@/component/ui/format";
+import {formatDuration, formatInitial, formatLocalizedName, formatSearchText} from "@/util/format.ts";
 import CustomExtensionModal from "@/component/CustomExtensionModal";
 import Alert from "@/component/ui/Alert";
 import Badge, {type BadgeVariant} from "@/component/ui/Badge";

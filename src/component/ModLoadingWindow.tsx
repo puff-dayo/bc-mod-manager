@@ -8,7 +8,7 @@ import {LoaderVersion} from "@/infrastructure/bridge/LoaderVersion";
 import {SdkStateService} from "@/service/SdkStateService.ts";
 import {BcGameState} from "@/service/BcGameState.ts";
 import type {ModLoadProgress, ModLoadStatus} from "@/domain/ModLoad";
-import {formatDuration} from "@/component/ui/format.ts";
+import {formatDuration} from "@/util/format.ts";
 
 // Auto-dismiss the window shortly after loading finishes (unless the build is
 // outdated, in which case it stays so the user can act on the warning).

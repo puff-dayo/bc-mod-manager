@@ -2,7 +2,7 @@ import {Component} from "preact";
 import {Logger, type LogEntry, type LogLevel} from "@/infrastructure/logging/Logger";
 import {LogService} from "@/service/LogService";
 import i18n from "@/i18n/i18n";
-import {formatData} from "@/component/ui/format";
+import {formatData} from "@/util/format.ts";
 import Badge, {type BadgeVariant} from "@/component/ui/Badge";
 import Button from "@/component/ui/Button";
 import EmptyState from "@/component/ui/EmptyState";
