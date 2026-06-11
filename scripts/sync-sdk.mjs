@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 
 import { cpSync, existsSync, readdirSync, rmSync } from 'node:fs';
-import { join, resolve, dirname } from 'node:path';
+import { join, resolve, dirname, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { execSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = resolve(__dirname, '..');
@@ -23,6 +23,27 @@ function info(msg) {
 
 function success(msg) {
   console.log(`\x1b[32m✔\x1b[0m ${msg}`);
+}
+
+function toPosixPath(filePath) {
+  return filePath.split(sep).join('/');
+}
+
+function removePatchArtifacts(dir) {
+  if (!existsSync(dir)) return;
+
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const entryPath = join(dir, entry.name);
+
+    if (entry.isDirectory()) {
+      removePatchArtifacts(entryPath);
+      continue;
+    }
+
+    if (entry.name.endsWith('.rej') || entry.name.endsWith('.orig')) {
+      rmSync(entryPath, { force: true });
+    }
+  }
 }
 
 // --- guard: submodule source must exist ------------------------------------
@@ -61,30 +82,35 @@ for (const patchFile of patchFiles) {
   const patchLabel = `patches/bcmodsdk/${patchFile}`;
 
   try {
-    execSync(`patch -p1 -s -d "${BUILT_SDK}" < "${patchPath}"`, {
-      shell: '/bin/sh',
+    execFileSync('git', [
+      'apply',
+      '-p1',
+      '--whitespace=nowarn',
+      `--directory=${toPosixPath(relative(root, BUILT_SDK))}`,
+      toPosixPath(relative(root, patchPath)),
+    ], {
+      cwd: root,
       stdio: 'pipe',
     });
     applied++;
     success(`Applied: ${patchLabel}`);
   } catch (err) {
+    if (err.code === 'ENOENT') {
+      fail('Git executable not found. Install Git and make sure it is available on PATH.');
+    }
+
     failed++;
     console.error(`\x1b[31m✖ Failed: ${patchLabel}\x1b[0m`);
+    const stdout = err.stdout?.toString() ?? '';
     const stderr = err.stderr?.toString() ?? '';
     // Print the rejected hunks if any
+    if (stdout) console.error(stdout);
     if (stderr) console.error(stderr);
   }
 }
 
 // --- 3. Clean up reject files ----------------------------------------------
-try {
-  execSync(`find "${BUILT_SDK}" -name '*.rej' -o -name '*.orig' | xargs rm -f`, {
-    shell: '/bin/sh',
-    stdio: 'pipe',
-  });
-} catch {
-  // find may fail if no matches — ignore
-}
+removePatchArtifacts(BUILT_SDK);
 
 // --- Summary ----------------------------------------------------------------
 console.log(`\nbcmodsdk sync: copy + ${applied} patch(es) applied, ${failed} failed`);
