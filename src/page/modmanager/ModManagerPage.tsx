@@ -333,7 +333,10 @@ export default class ModManagerPage extends Component<{}, ModManagerState> {
                 const authorLabel = mod.addon.author ? `by ${mod.addon.author}` : '';
 
                 return (
-                  <ListRow key={uniqueId} className="px-3 py-2">
+                    <ListRow
+                      key={uniqueId}
+                      className="relative px-3 py-2 transition-[background,box-shadow] duration-150 hover:bg-slate-50 hover:shadow-[inset_3px_0_0_rgb(100_116_139),0_1px_0_rgb(15_23_42/0.06)]"
+                    >
                     <div className="grid gap-2 sm:grid-cols-[2rem_minmax(0,1fr)_auto_auto] sm:items-center sm:gap-3">
                       <div className="flex h-8 w-8 items-center justify-center rounded-md border border-bmm-border bg-bmm-surface-raised text-xs font-bold text-bmm-muted">
                         {mod.addon.icon ? (
@@ -464,6 +467,34 @@ export default class ModManagerPage extends Component<{}, ModManagerState> {
                         )}
 
                         <div className="grid gap-x-4 gap-y-1 sm:grid-cols-2">
+                            {mod.addon.versions.length > 0 && (
+                              <div className="flex min-w-0 items-center gap-2">
+                                <span className="shrink-0">
+                                  {i18n('label-selected-version')}:
+                                </span>
+
+                                <Select
+                                  value={selectedVersion}
+                                  onChange={(e) =>
+                                    this.handleVersionChange(
+                                      mod.addon.id,
+                                      mod.registryId,
+                                      (e.target as HTMLSelectElement).value,
+                                      isEnabled
+                                    )
+                                  }
+                                  compact
+                                  className="h-7 w-36"
+                                >
+                                  {mod.addon.versions.map(v => (
+                                    <option key={v.distribution} value={v.distribution}>
+                                      {v.distribution}
+                                    </option>
+                                  ))}
+                                </Select>
+                              </div>
+                            )}
+
                           <div>
                             ID: <span className="font-mono text-bmm-ink">{mod.addon.id}</span>
                           </div>
@@ -551,37 +582,7 @@ export default class ModManagerPage extends Component<{}, ModManagerState> {
                           );
                         })()}
 
-                        {mod.addon.versions.length > 0 && (
-                          <div className="mb-2 flex flex-wrap items-center gap-2 rounded-md border border-bmm-border bg-bmm-surface-muted px-2 py-1.5">
-                            <span className="text-xs font-semibold text-bmm-ink">
-                              {i18n('label-selected-version')}
-                            </span>
 
-                            <Select
-                              value={selectedVersion}
-                              onChange={(e) =>
-                                this.handleVersionChange(
-                                  mod.addon.id,
-                                  mod.registryId,
-                                  (e.target as HTMLSelectElement).value,
-                                  isEnabled
-                                )
-                              }
-                              compact
-                              className="w-full sm:w-40"
-                            >
-                              {mod.addon.versions.map(v => (
-                                <option key={v.distribution} value={v.distribution}>
-                                  {v.distribution}
-                                </option>
-                              ))}
-                            </Select>
-
-                            <span className="text-xs text-bmm-faint">
-                              {selectedVersion || i18n('label-not-selected')}
-                            </span>
-                          </div>
-                        )}
                       </div>
                     )}
                   </ListRow>
