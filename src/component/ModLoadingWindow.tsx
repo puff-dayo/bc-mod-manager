@@ -222,7 +222,7 @@ export default class ModLoadingWindow extends Component<{}, ModLoadingWindowStat
               </div>
             )}
 
-            {sdkHijacked && (
+            {false && sdkHijacked && (
               <div className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5">
                 <p className="m-0 text-[0.8125rem] font-bold text-amber-800">{i18n('loading-sdk-hijacked-title')}</p>
                 <p className="m-0 mt-1 text-xs leading-5 text-amber-700">
