@@ -48,3 +48,15 @@ textarea {
 ::selection {
   background: rgb(37 99 235 / 0.24);
 }
+
+@keyframes bmm-launcher-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.375rem) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
