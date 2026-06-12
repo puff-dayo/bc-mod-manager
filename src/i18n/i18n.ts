@@ -1,26 +1,61 @@
 import i18next, {type TOptions} from 'i18next';
 import {initReactI18next} from 'react-i18next';
 import en from '@/i18n/locales/EN/translation.json';
+import de from '@/i18n/locales/DE/translation.json';
+import fr from '@/i18n/locales/FR/translation.json';
+import ru from '@/i18n/locales/RU/translation.json';
 import cn from '@/i18n/locales/CN/translation.json';
+import tw from '@/i18n/locales/TW/translation.json';
+import ua from '@/i18n/locales/UA/translation.json';
 import {Logger} from '@/infrastructure/logging/Logger';
 
 const DEFAULT_LANGUAGE = 'EN';
 const LANGUAGE_MAP: Record<string, string> = {
   EN: 'EN',
+  DE: 'DE',
+  FR: 'FR',
+  RU: 'RU',
   CN: 'CN',
+  TW: 'TW',
+  UA: 'UA',
+  UK: 'UA',
+  UKR: 'UA',
+  'de-DE': 'DE',
+  'fr-FR': 'FR',
+  'ru-RU': 'RU',
   ZH: 'CN',
   'ZH-CN': 'CN',
   'ZH-HANS': 'CN',
+  'ZH-TW': 'TW',
+  'ZH-HANT': 'TW',
   'zh-CN': 'CN',
   'zh-Hans': 'CN',
+  'zh-TW': 'TW',
+  'zh-Hant': 'TW',
+  'uk-UA': 'UA',
 };
 
 const resources = {
   EN: {
     translation: en,
   },
+  DE: {
+    translation: de,
+  },
+  FR: {
+    translation: fr,
+  },
+  RU: {
+    translation: ru,
+  },
   CN: {
     translation: cn,
+  },
+  TW: {
+    translation: tw,
+  },
+  UA: {
+    translation: ua,
   },
 } as const;
 
