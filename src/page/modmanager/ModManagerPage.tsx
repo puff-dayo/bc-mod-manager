@@ -255,54 +255,91 @@ export default class ModManagerPage extends Component<{}, ModManagerState> {
 
     return (
       <Page size="xl">
-        <PageHeader
-          title={i18n('title-mod-manager')}
-          actions={<Button
-            onClick={this.handleOpenCustomExtensionModal}
-            variant="neutral"
-          >
-            + {i18n('button-manage-custom-extensions')}
-          </Button>}
-        />
+        <div className="mb-3 space-y-2">
+          <h1 className="text-center text-lg font-extrabold tracking-tight text-bmm-ink">
+            {i18n('title-mod-manager')}
+          </h1>
 
-        {/* Error Message */}
+          <div className="flex flex-col gap-2 rounded-md border border-bmm-border bg-bmm-surface px-3 py-2 text-xs lg:flex-row lg:items-center">
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 lg:min-w-0 lg:flex-1">
+              <span className="font-medium text-bmm-accent">
+                <strong className="font-extrabold">{totalCount}</strong>{' '}
+                {i18n('label-total-mods')}
+              </span>
+
+              <span className="text-bmm-border-strong">·</span>
+
+              <span className="font-medium text-emerald-700">
+                <strong className="font-extrabold">{enabledCount}</strong>{' '}
+                {i18n('label-enabled-mods')}
+              </span>
+
+              <span className="text-bmm-border-strong">·</span>
+
+              <span className="font-medium text-amber-700">
+                <strong className="font-extrabold">{totalCount - enabledCount}</strong>{' '}
+                {i18n('label-disabled-mods')}
+              </span>
+
+              <span className="text-bmm-border-strong">·</span>
+
+              <span className="font-medium text-emerald-700">
+                <strong className="font-extrabold">{loadedCount}</strong>{' '}
+                {i18n('label-loaded-mods')}
+              </span>
+
+              {failedCount > 0 && (
+                <>
+                  <span className="text-bmm-border-strong">·</span>
+
+                  <span className="font-medium text-red-700">
+                    <strong className="font-extrabold">{failedCount}</strong>{' '}
+                    {i18n('label-failed-mods')}
+                  </span>
+                </>
+              )}
+            </div>
+
+            <div className="min-w-0 lg:w-[22rem]">
+              <Input
+                type="text"
+                aria-label={i18n('placeholder-search-mods')}
+                placeholder={i18n('placeholder-search-mods')}
+                value={this.state.searchQuery}
+                onInput={this.handleSearchChange}
+                className="h-8 w-full border-bmm-border-strong bg-bmm-surface-raised px-3 shadow-inner focus:border-bmm-accent focus:bg-white focus:shadow-[0_0_0_2px_rgb(37_99_235/0.12)]"
+              />
+            </div>
+
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center lg:shrink-0 lg:justify-end">
+              <Button
+                onClick={this.handleOpenCustomExtensionModal}
+                variant="neutral"
+                size="sm"
+                className="shrink-0"
+              >
+                + {i18n('button-manage-custom-extensions')}
+              </Button>
+
+              <Select
+                value={this.state.filter}
+                onChange={this.handleFilterChange}
+                compact
+                className="w-full sm:w-auto sm:min-w-40"
+              >
+                <option value="all">{i18n('filter-all-mods')}</option>
+                <option value="enabled">{i18n('filter-enabled-only')}</option>
+                <option value="disabled">{i18n('filter-disabled-only')}</option>
+              </Select>
+            </div>
+          </div>
+        </div>
+
         {error && (
           <Alert>
             {error}
           </Alert>
         )}
-
-        {/* Stats Bar */}
-        <StatsGrid>
-          <StatCard label={i18n('label-total-mods')} value={totalCount} variant="primary"/>
-          <StatCard label={i18n('label-enabled-mods')} value={enabledCount} variant="success"/>
-          <StatCard label={i18n('label-disabled-mods')} value={totalCount - enabledCount}/>
-          <StatCard label={i18n('label-loaded-mods')} value={loadedCount} variant="success"/>
-          {failedCount > 0 && (
-            <StatCard label={i18n('label-failed-mods')} value={failedCount} variant="danger"/>
-          )}
-        </StatsGrid>
-
-        {/* Filters and Search */}
-        <Toolbar>
-          <ToolbarPrimary>
-            <Input
-              type="text"
-              placeholder={i18n('placeholder-search-mods')}
-              value={this.state.searchQuery}
-              onInput={this.handleSearchChange}
-            />
-          </ToolbarPrimary>
-          <Select
-            value={this.state.filter}
-            onChange={this.handleFilterChange}
-            className="w-auto min-w-40"
-          >
-            <option value="all">{i18n('filter-all-mods')}</option>
-            <option value="enabled">{i18n('filter-enabled-only')}</option>
-            <option value="disabled">{i18n('filter-disabled-only')}</option>
-          </Select>
-        </Toolbar>
 
         {/* Mod List */}
         <List>
