@@ -3,23 +3,22 @@
 @theme {
   --font-sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 
-  --color-bmm-canvas: #dbeafe;
+  --color-bmm-canvas: #eef2f7;
   --color-bmm-surface: #ffffff;
-  --color-bmm-surface-muted: #eff6ff;
-  --color-bmm-surface-raised: #f8fbff;
-  --color-bmm-border: #7dd3fc;
-  --color-bmm-border-strong: #0284c7;
-  --color-bmm-ink: #06111f;
-  --color-bmm-muted: #1f3a5f;
-  --color-bmm-faint: #31547a;
+  --color-bmm-surface-muted: #f3f6fb;
+  --color-bmm-surface-raised: #f8fafc;
+  --color-bmm-border: #cbd5e1;
+  --color-bmm-border-strong: #94a3b8;
+  --color-bmm-ink: #0f172a;
+  --color-bmm-muted: #475569;
+  --color-bmm-faint: #64748b;
   --color-bmm-accent: #2563eb;
-  --color-bmm-accent-strong: #1e3a8a;
+  --color-bmm-accent-strong: #1d4ed8;
   --color-bmm-accent-soft: #dbeafe;
-  --radius-bmm: 0.875rem;
-  --radius-bmm-sm: 0.625rem;
-  --shadow-bmm-panel: 0 18px 55px rgb(2 6 23 / 0.24), 0 2px 8px rgb(2 6 23 / 0.14);
-  --shadow-bmm-card: 0 10px 26px rgb(2 6 23 / 0.12);
-  --shadow-bmm-control: 0 1px 2px rgb(2 6 23 / 0.14);
+  --radius-bmm: 0.75rem;
+  --radius-bmm-sm: 0.5rem;
+  --shadow-bmm-panel: 0 18px 45px rgb(15 23 42 / 0.18), 0 2px 8px rgb(15 23 42 / 0.10);
+  --shadow-bmm-card: 0 4px 14px rgb(15 23 42 / 0.08);
 }
 
 #root {

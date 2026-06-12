@@ -16,12 +16,7 @@ import Input from "@/component/ui/Input";
 import List from "@/component/ui/List";
 import ListRow from "@/component/ui/ListRow";
 import Page from "@/component/ui/Page";
-import PageHeader from "@/component/ui/PageHeader";
 import Select from "@/component/ui/Select";
-import StatCard from "@/component/ui/StatCard";
-import StatsGrid from "@/component/ui/StatsGrid";
-import Toolbar from "@/component/ui/Toolbar";
-import ToolbarPrimary from "@/component/ui/ToolbarPrimary";
 
 
 const LOAD_STATUS_LABEL_KEY: Record<ModLoadStatus, string> = {
@@ -37,6 +32,44 @@ const LOAD_STATUS_VARIANT: Record<ModLoadStatus, BadgeVariant> = {
   loaded: 'success',
   error: 'danger',
 };
+
+type TagColorStyle = {
+  backgroundColor: string;
+  borderColor: string;
+  color: string;
+};
+
+function getSortedUniqueTags(mods: ModManagerState['availableMods']): string[] {
+  return Array.from(
+    new Set(
+      mods.flatMap(mod => mod.addon.tags || [])
+    )
+  ).sort((a, b) => a.localeCompare(b));
+}
+
+function buildTagColorMap(tags: string[]): Map<string, TagColorStyle> {
+  const map = new Map<string, TagColorStyle>();
+
+  if (tags.length === 0) {
+    return map;
+  }
+
+  tags.forEach((tag, index) => {
+    const hue = Math.round((index * 360) / tags.length);
+
+    map.set(tag, {
+      backgroundColor: `hsl(${hue} 62% 96%)`,
+      borderColor: `hsl(${hue} 56% 72%)`,
+      color: `hsl(${hue} 48% 30%)`,
+    });
+  });
+
+  return map;
+}
+
+function getTagStyle(tagColorMap: Map<string, TagColorStyle>, tag: string): TagColorStyle | undefined {
+  return tagColorMap.get(tag);
+}
 
 interface ModManagerState {
   availableMods: Array<{
@@ -249,6 +282,9 @@ export default class ModManagerPage extends Component<{}, ModManagerState> {
     const enabledCount = ModService.getEnabledCount();
     const totalCount = this.state.availableMods.length;
 
+    const sortedTags = getSortedUniqueTags(this.state.availableMods);
+    const tagColorMap = buildTagColorMap(sortedTags);
+
     const loadEntries = Array.from(this.state.loadStatus.values());
     const loadedCount = loadEntries.filter(entry => entry.status === 'loaded').length;
     const failedCount = loadEntries.filter(entry => entry.status === 'error').length;
@@ -366,7 +402,7 @@ export default class ModManagerPage extends Component<{}, ModManagerState> {
                   : (this.state.pendingVersions.get(uniqueId) || mod.addon.versions[0]?.distribution || '');
 
                 const isExpanded = expandedModId === uniqueId;
-                const categoryTags = mod.addon.tags?.slice(0, 3) || [];
+                const categoryTags = mod.addon.tags?.slice(0, 4) || [];
                 const authorLabel = mod.addon.author ? `by ${mod.addon.author}` : '';
 
                 return (
@@ -414,7 +450,8 @@ export default class ModManagerPage extends Component<{}, ModManagerState> {
                                   <Badge
                                     key={tag}
                                     variant="neutral"
-                                    className="shrink-0 px-1.5 py-0.5 text-[0.6875rem] leading-none"
+                                    style={getTagStyle(tagColorMap, tag)}
+                                    className="shrink-0 px-1.5 py-0.5 text-[0.6875rem] leading-none font-light shadow-none"
                                   >
                                     {tag}
                                   </Badge>
@@ -427,7 +464,7 @@ export default class ModManagerPage extends Component<{}, ModManagerState> {
                             <div className="ml-1 flex shrink-0 items-center gap-1">
                               <Badge
                                 variant="success"
-                                className="px-1.5 py-0.5 text-[0.6875rem] leading-none"
+                                className="px-1.5 py-0.5 text-[0.6875rem] font-light leading-none"
                               >
                                 {i18n('label-installed')}
                               </Badge>
@@ -495,7 +532,8 @@ export default class ModManagerPage extends Component<{}, ModManagerState> {
                               <Badge
                                 key={tag}
                                 variant="neutral"
-                                className="px-1.5 py-0.5 text-[0.6875rem] leading-none"
+                                style={getTagStyle(tagColorMap, tag)}
+                                className="px-1.5 py-0.5 text-[0.6875rem] leading-none shadow-none"
                               >
                                 {tag}
                               </Badge>
