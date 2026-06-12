@@ -3,12 +3,13 @@ import { SdkStateService } from '@/service/SdkStateService';
 import { SdkCrashStore } from '@/service/SdkCrashStore';
 import { ModLoaderService } from '@/service/ModLoaderService';
 import { ModService } from '@/service/ModService';
+import {t} from '@/i18n/i18n';
 
 export function showSdkAlert(message: string): void {
   ModalStore.open({
     prompt: message,
     callback: () => {},
-    buttons: { submit: 'OK' },
+    buttons: { submit: t('button-ok') },
   });
 }
 

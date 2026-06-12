@@ -1,5 +1,5 @@
 import {Component} from "preact";
-import i18n from "@/i18n/i18n.ts";
+import {t} from "@/i18n/i18n.ts";
 import cn from "@/util/cn.ts";
 import Icon from "@/component/ui/Icon.tsx";
 import Badge from "@/component/ui/Badge.tsx";
@@ -176,13 +176,13 @@ export default class ModLoadingWindow extends Component<{}, ModLoadingWindowStat
             className="flex items-center justify-between gap-3 border-b border-bmm-border bg-bmm-surface-raised px-4 py-3">
             <div className="flex min-w-0 items-center gap-2">
               {!progress.finished && <Icon name="refresh" spin className="text-bmm-accent"/>}
-              <h2 className="m-0 truncate text-sm font-bold text-bmm-ink">{i18n('loading-title')}</h2>
+              <h2 className="m-0 truncate text-sm font-bold text-bmm-ink">{t('loading-title')}</h2>
             </div>
             <button
               type="button"
               onClick={this.handleClose}
-              title={i18n('button-close')}
-              aria-label={i18n('button-close')}
+              title={t('button-close')}
+              aria-label={t('button-close')}
               className="inline-flex h-6 w-6 items-center justify-center rounded-md text-lg leading-none text-bmm-faint transition-colors hover:bg-bmm-accent-soft hover:text-bmm-accent-strong"
             >
               ×
@@ -192,24 +192,24 @@ export default class ModLoadingWindow extends Component<{}, ModLoadingWindowStat
           <div className="px-4 py-3">
             {outdated && (
               <div className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5">
-                <p className="m-0 text-[0.8125rem] font-bold text-amber-800">{i18n('loading-outdated-title')}</p>
-                <p className="m-0 mt-1 text-xs leading-5 text-amber-700">{i18n('loading-outdated-detail')}</p>
+                <p className="m-0 text-[0.8125rem] font-bold text-amber-800">{t('loading-outdated-title')}</p>
+                <p className="m-0 mt-1 text-xs leading-5 text-amber-700">{t('loading-outdated-detail')}</p>
                 <button
                   type="button"
                   onClick={this.handleReload}
                   className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-amber-300 bg-white px-2.5 py-1.5 text-xs font-bold text-amber-800 transition-colors hover:bg-amber-100"
                 >
                   <Icon name="refresh"/>
-                  {i18n('loading-button-reload')}
+                  {t('loading-button-reload')}
                 </button>
               </div>
             )}
 
             {modsOutdated && (
               <div className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5">
-                <p className="m-0 text-[0.8125rem] font-bold text-amber-800">{i18n('loading-mods-outdated-title')}</p>
+                <p className="m-0 text-[0.8125rem] font-bold text-amber-800">{t('loading-mods-outdated-title')}</p>
                 <p className="m-0 mt-1 text-xs leading-5 text-amber-700">
-                  {i18n('loading-mods-outdated-detail', {count: modsOutdatedCount})}
+                  {t('loading-mods-outdated-detail', {count: modsOutdatedCount})}
                 </p>
                 <button
                   type="button"
@@ -217,16 +217,16 @@ export default class ModLoadingWindow extends Component<{}, ModLoadingWindowStat
                   className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-amber-300 bg-white px-2.5 py-1.5 text-xs font-bold text-amber-800 transition-colors hover:bg-amber-100"
                 >
                   <Icon name="refresh"/>
-                  {i18n('loading-button-reload')}
+                  {t('loading-button-reload')}
                 </button>
               </div>
             )}
 
             {false && sdkHijacked && (
               <div className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5">
-                <p className="m-0 text-[0.8125rem] font-bold text-amber-800">{i18n('loading-sdk-hijacked-title')}</p>
+                <p className="m-0 text-[0.8125rem] font-bold text-amber-800">{t('loading-sdk-hijacked-title')}</p>
                 <p className="m-0 mt-1 text-xs leading-5 text-amber-700">
-                  {i18n('loading-sdk-hijacked-detail', {count: sdkHijackedCount})}
+                  {t('loading-sdk-hijacked-detail', {count: sdkHijackedCount})}
                 </p>
               </div>
             )}
@@ -290,7 +290,7 @@ export default class ModLoadingWindow extends Component<{}, ModLoadingWindowStat
                               className="max-w-[5.75rem] shrink-0 overflow-hidden text-ellipsis px-1.5 py-0 text-[0.625rem]"
                               title={entryDetail}
                             >
-                              {i18n('loading-mod-outdated-badge')}
+                              {t('loading-mod-outdated-badge')}
                             </Badge>
                           )}
                         </div>
@@ -344,51 +344,51 @@ export default class ModLoadingWindow extends Component<{}, ModLoadingWindowStat
   private statusText(): string {
     const {progress, outdated, modsOutdated} = this.state;
     if (progress.waitingForGame) {
-      return i18n('loading-waiting-game');
+      return t('loading-waiting-game');
     }
     if (progress.total === 0) {
       if (outdated) {
-        return i18n('loading-outdated-title');
+        return t('loading-outdated-title');
       }
       if (modsOutdated) {
-        return i18n('loading-mods-outdated-title');
+        return t('loading-mods-outdated-title');
       }
-      return i18n('loading-complete');
+      return t('loading-complete');
     }
     if (progress.finished) {
       const base = progress.errored > 0
-        ? i18n('loading-complete-errors', {count: progress.errored})
-        : i18n('loading-complete');
+        ? t('loading-complete-errors', {count: progress.errored})
+        : t('loading-complete');
       return progress.totalDurationMs !== undefined
         ? `${base} · ${formatDuration(progress.totalDurationMs)}`
         : base;
     }
-    return i18n('loading-in-progress');
+    return t('loading-in-progress');
   }
 
   private entryDetailText(entry: ModLoadProgress['entries'][number], modOutdated: boolean): string {
     const lines = [
       entry.name,
-      `${i18n('label-load-status')}: ${i18n(`loading-status-${entry.status}`)}`,
+      `${t('label-load-status')}: ${t(`loading-status-${entry.status}`)}`,
     ];
 
     if (entry.distribution) {
-      lines.push(`${i18n('label-selected-version')}: ${entry.distribution}`);
+      lines.push(`${t('label-selected-version')}: ${entry.distribution}`);
     }
     if (entry.loadType) {
-      lines.push(`${i18n('label-type')}: ${entry.loadType}`);
+      lines.push(`${t('label-type')}: ${entry.loadType}`);
     }
     if (entry.durationMs !== undefined) {
-      lines.push(`${i18n('label-load-duration')}: ${formatDuration(entry.durationMs)}`);
+      lines.push(`${t('label-load-duration')}: ${formatDuration(entry.durationMs)}`);
     }
     if (modOutdated) {
-      lines.push(i18n('loading-mod-outdated-detail'));
+      lines.push(t('loading-mod-outdated-detail'));
     }
     if (entry.error) {
-      lines.push(`${i18n('label-error')}: ${entry.error}`);
+      lines.push(`${t('label-error')}: ${entry.error}`);
     }
     if (entry.postLoadError) {
-      lines.push(`${i18n('label-post-load-error')}: ${entry.postLoadError}`);
+      lines.push(`${t('label-post-load-error')}: ${entry.postLoadError}`);
     }
 
     return lines.join('\n');

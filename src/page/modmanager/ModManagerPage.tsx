@@ -4,7 +4,7 @@ import {ModLoaderService} from "@/service/ModLoaderService";
 import type {ModConfig} from "@/domain/Mod";
 import type {FusamAddon} from "@/domain/Registry";
 import type {ModLoadEntry, ModLoadStatus} from "@/domain/ModLoad";
-import i18n, {currentLanguage} from "@/i18n/i18n.ts";
+import {currentLanguage, t} from "@/i18n/i18n.ts";
 import {formatDuration, formatInitial, formatLocalizedName, formatSearchText} from "@/util/format.ts";
 import CustomExtensionModal from "@/component/CustomExtensionModal";
 import Alert from "@/component/ui/Alert";
@@ -172,7 +172,7 @@ export default class ModManagerPage extends Component<{}, ModManagerState> {
   };
 
   handleRemoveMod = (modId: string, registryId: string) => {
-    if (confirm('Are you sure you want to remove this mod?')) {
+    if (confirm(t('confirm-remove-mod'))) {
       const uniqueKey = `${modId}_${registryId}`;
       ModService.removeConfig(modId, registryId);
 
@@ -259,13 +259,13 @@ export default class ModManagerPage extends Component<{}, ModManagerState> {
 
     if (!entry) {
       return (
-        <Badge variant="neutral" title={i18n('loading-status-not-loaded')}>
-          {i18n('loading-status-not-loaded')}
+        <Badge variant="neutral" title={t('loading-status-not-loaded')}>
+          {t('loading-status-not-loaded')}
         </Badge>
       );
     }
 
-    const label = i18n(LOAD_STATUS_LABEL_KEY[entry.status]);
+    const label = t(LOAD_STATUS_LABEL_KEY[entry.status]);
     const showDuration = entry.durationMs !== undefined
       && (entry.status === 'loaded' || entry.status === 'error');
 
@@ -293,35 +293,35 @@ export default class ModManagerPage extends Component<{}, ModManagerState> {
       <Page size="xl">
         <div className="mb-3 space-y-2">
           <h1 className="text-center text-lg font-extrabold tracking-tight text-bmm-ink">
-            {i18n('title-mod-manager')}
+            {t('title-mod-manager')}
           </h1>
 
           <div className="flex flex-col gap-2 rounded-md border border-bmm-border bg-bmm-surface px-3 py-2 text-xs lg:flex-row lg:items-center">
             <div className="flex flex-wrap items-center gap-x-2 gap-y-1 lg:min-w-0 lg:flex-1">
               <span className="font-medium text-bmm-accent">
                 <strong className="font-extrabold">{totalCount}</strong>{' '}
-                {i18n('label-total-mods')}
+                {t('label-total-mods')}
               </span>
 
               <span className="text-bmm-border-strong">·</span>
 
               <span className="font-medium text-emerald-700">
                 <strong className="font-extrabold">{enabledCount}</strong>{' '}
-                {i18n('label-enabled-mods')}
+                {t('label-enabled-mods')}
               </span>
 
               <span className="text-bmm-border-strong">·</span>
 
               <span className="font-medium text-amber-700">
                 <strong className="font-extrabold">{totalCount - enabledCount}</strong>{' '}
-                {i18n('label-disabled-mods')}
+                {t('label-disabled-mods')}
               </span>
 
               <span className="text-bmm-border-strong">·</span>
 
               <span className="font-medium text-emerald-700">
                 <strong className="font-extrabold">{loadedCount}</strong>{' '}
-                {i18n('label-loaded-mods')}
+                {t('label-loaded-mods')}
               </span>
 
               {failedCount > 0 && (
@@ -330,7 +330,7 @@ export default class ModManagerPage extends Component<{}, ModManagerState> {
 
                   <span className="font-medium text-red-700">
                     <strong className="font-extrabold">{failedCount}</strong>{' '}
-                    {i18n('label-failed-mods')}
+                    {t('label-failed-mods')}
                   </span>
                 </>
               )}
@@ -339,8 +339,8 @@ export default class ModManagerPage extends Component<{}, ModManagerState> {
             <div className="min-w-0 lg:w-[22rem]">
               <Input
                 type="text"
-                aria-label={i18n('placeholder-search-mods')}
-                placeholder={i18n('placeholder-search-mods')}
+                aria-label={t('placeholder-search-mods')}
+                placeholder={t('placeholder-search-mods')}
                 value={this.state.searchQuery}
                 onInput={this.handleSearchChange}
                 className="h-8 w-full border-bmm-border-strong bg-bmm-surface-raised px-3 shadow-inner focus:border-bmm-accent focus:bg-white focus:shadow-[0_0_0_2px_rgb(37_99_235/0.12)]"
@@ -354,7 +354,7 @@ export default class ModManagerPage extends Component<{}, ModManagerState> {
                 size="sm"
                 className="shrink-0"
               >
-                + {i18n('button-manage-custom-extensions')}
+                + {t('button-manage-custom-extensions')}
               </Button>
 
               <Select
@@ -363,9 +363,9 @@ export default class ModManagerPage extends Component<{}, ModManagerState> {
                 compact
                 className="w-full sm:w-auto sm:min-w-40"
               >
-                <option value="all">{i18n('filter-all-mods')}</option>
-                <option value="enabled">{i18n('filter-enabled-only')}</option>
-                <option value="disabled">{i18n('filter-disabled-only')}</option>
+                <option value="all">{t('filter-all-mods')}</option>
+                <option value="enabled">{t('filter-enabled-only')}</option>
+                <option value="disabled">{t('filter-disabled-only')}</option>
               </Select>
             </div>
           </div>
@@ -382,11 +382,11 @@ export default class ModManagerPage extends Component<{}, ModManagerState> {
           {filteredMods.length === 0 ? (
             totalCount === 0 ? (
               <EmptyState
-                title={i18n('no-mods-available')}
-                description={i18n('no-mods-available-detail')}
+                title={t('no-mods-available')}
+                description={t('no-mods-available-detail')}
               />
             ) : (
-              <EmptyState title={i18n('no-mods-match-search')}/>
+              <EmptyState title={t('no-mods-match-search')}/>
             )
           ) : (
             <div>
@@ -403,7 +403,7 @@ export default class ModManagerPage extends Component<{}, ModManagerState> {
 
                 const isExpanded = expandedModId === uniqueId;
                 const categoryTags = mod.addon.tags?.slice(0, 4) || [];
-                const authorLabel = mod.addon.author ? `by ${mod.addon.author}` : '';
+                const authorLabel = mod.addon.author ? t('label-author-by', {author: mod.addon.author}) : '';
 
                 return (
                     <ListRow
@@ -466,7 +466,7 @@ export default class ModManagerPage extends Component<{}, ModManagerState> {
                                 variant="success"
                                 className="px-1.5 py-0.5 text-[0.6875rem] font-light leading-none"
                               >
-                                {i18n('label-installed')}
+                                {t('label-installed')}
                               </Badge>
                               {this.renderLoadBadge(uniqueId)}
                             </div>
@@ -492,7 +492,7 @@ export default class ModManagerPage extends Component<{}, ModManagerState> {
                         }
                         className="justify-start sm:justify-center"
                       >
-                        {isExpanded ? i18n('button-less') : i18n('button-more')}
+                        {isExpanded ? t('button-less') : t('button-more')}
                       </Button>
 
                       {isEnabled ? (
@@ -500,20 +500,20 @@ export default class ModManagerPage extends Component<{}, ModManagerState> {
                           onClick={() => this.handleRemoveMod(mod.addon.id, mod.registryId)}
                           variant="danger"
                           size="sm"
-                          title="Remove this mod"
+                          title={t('title-remove-mod')}
                           className="justify-start sm:justify-center"
                         >
-                          {i18n('button-remove-mod')}
+                          {t('button-remove-mod')}
                         </Button>
                       ) : (
                         <Button
                           onClick={() => this.handleInstallMod(mod.addon.id, mod.registryId)}
                           variant="primary"
                           size="sm"
-                          title="Install this mod"
+                          title={t('title-install-mod')}
                           className="justify-start sm:justify-center"
                         >
-                          {i18n('button-install-mod')}
+                          {t('button-install-mod')}
                         </Button>
                       )}
                     </div>
@@ -545,7 +545,7 @@ export default class ModManagerPage extends Component<{}, ModManagerState> {
                             {mod.addon.versions.length > 0 && (
                               <div className="flex min-w-0 items-center gap-2">
                                 <span className="shrink-0">
-                                  {i18n('label-selected-version')}:
+                                  {t('label-selected-version')}:
                                 </span>
 
                                 <Select
@@ -575,18 +575,18 @@ export default class ModManagerPage extends Component<{}, ModManagerState> {
                           </div>
 
                           <div>
-                            {i18n('label-registry')}: <span className="text-bmm-ink">{mod.registryUrl}</span>
+                            {t('label-registry')}: <span className="text-bmm-ink">{mod.registryUrl}</span>
                           </div>
 
                           {mod.addon.type && (
                             <div>
-                              {i18n('label-type')}: <span className="text-bmm-ink">{mod.addon.type}</span>
+                              {t('label-type')}: <span className="text-bmm-ink">{mod.addon.type}</span>
                             </div>
                           )}
 
                           {mod.addon.repository && (
                             <div className="min-w-0">
-                              {i18n('label-repository')}:{' '}
+                              {t('label-repository')}:{' '}
                               <a
                                 href={mod.addon.repository}
                                 target="_blank"
@@ -600,7 +600,7 @@ export default class ModManagerPage extends Component<{}, ModManagerState> {
 
                           {mod.addon.website && (
                             <div className="min-w-0">
-                              {i18n('label-website')}:{' '}
+                              {t('label-website')}:{' '}
                               <a
                                 href={mod.addon.website}
                                 target="_blank"
@@ -614,14 +614,14 @@ export default class ModManagerPage extends Component<{}, ModManagerState> {
 
                           {mod.addon.discord && (
                             <div className="min-w-0">
-                              {i18n('label-discord')}:{' '}
+                              {t('label-discord')}:{' '}
                               <a
                                 href={mod.addon.discord}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="break-all text-bmm-accent hover:text-bmm-accent-strong"
                               >
-                                {i18n('button-join-discord')}
+                                {t('button-join-discord')}
                               </a>
                             </div>
                           )}
@@ -633,7 +633,7 @@ export default class ModManagerPage extends Component<{}, ModManagerState> {
                           return (
                             <div className="mt-2 rounded-md border border-bmm-border bg-bmm-surface-muted px-2 py-1.5">
                               <div className="flex flex-wrap items-center gap-1.5">
-                                <span>{i18n('label-load-status')}:</span>
+                                <span>{t('label-load-status')}:</span>
                                 {this.renderLoadBadge(uniqueId)}
                                 {loadEntry?.loadType && (
                                   <span className="text-bmm-faint">
@@ -650,7 +650,7 @@ export default class ModManagerPage extends Component<{}, ModManagerState> {
 
                               {loadEntry?.postLoadError && (
                                 <pre className="mt-1 max-h-32 overflow-auto whitespace-pre-wrap rounded border border-red-200 bg-red-50 p-2 text-[0.6875rem] text-red-700">
-                                  {i18n('label-post-load-error')}: {loadEntry.postLoadError}
+                                  {t('label-post-load-error')}: {loadEntry.postLoadError}
                                 </pre>
                               )}
                             </div>
@@ -670,7 +670,7 @@ export default class ModManagerPage extends Component<{}, ModManagerState> {
         {/* Footer Info */}
         {filteredMods.length > 0 && (
           <div className="mt-3.5 text-center text-[0.8125rem] text-bmm-muted">
-            {i18n('showing-x-of-y-mods', {x: filteredMods.length, y: totalCount})}
+            {t('showing-x-of-y-mods', {x: filteredMods.length, y: totalCount})}
           </div>
         )}
 

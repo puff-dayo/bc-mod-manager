@@ -13,7 +13,9 @@
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.14",
+    "i18next": "^26.3.1",
     "preact": "^10.27.2",
+    "react-i18next": "^17.0.8",
     "tailwindcss": "^4.1.14",
     "vite-plugin-css-injected-by-js": "^3.5.2"
   },

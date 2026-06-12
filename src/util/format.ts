@@ -18,7 +18,8 @@ export function formatLocalizedName(
   }
 
   const normalizedLanguage = language.toLowerCase();
-  return name[normalizedLanguage] || name.en || Object.values(name)[0] || fallback;
+  const matchedLanguage = Object.keys(name).find(key => key.toLowerCase() === normalizedLanguage);
+  return name[language] || (matchedLanguage ? name[matchedLanguage] : undefined) || name.en || Object.values(name)[0] || fallback;
 }
 
 export function formatInitial(value: string, fallback = 'M'): string {

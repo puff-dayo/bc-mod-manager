@@ -6,6 +6,7 @@ import DialogPanel from "@/component/ui/DialogPanel";
 import Input from "@/component/ui/Input";
 import ModalBackdrop from "@/component/ui/ModalBackdrop";
 import Textarea from "@/component/ui/Textarea";
+import {t} from "@/i18n/i18n";
 
 interface ModalDialogProps {
   modal: ModalState;
@@ -49,7 +50,7 @@ export default class ModalDialog extends Component<ModalDialogProps, ModalDialog
     const {inputValue} = this.state;
 
     // Default buttons if not specified
-    const buttons = modal.buttons ?? {submit: "OK", cancel: "Cancel"};
+    const buttons = modal.buttons ?? {submit: t('button-ok'), cancel: t('button-cancel')};
     const submitLabel = buttons.submit;
 
     // Get all other buttons (excluding submit)

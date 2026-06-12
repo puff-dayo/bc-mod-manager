@@ -1,7 +1,7 @@
 import {Component} from "preact";
 import {Logger, type LogEntry, type LogLevel} from "@/infrastructure/logging/Logger";
 import {LogService} from "@/service/LogService";
-import i18n from "@/i18n/i18n";
+import {t} from "@/i18n/i18n";
 import {formatData} from "@/util/format.ts";
 import Badge, {type BadgeVariant} from "@/component/ui/Badge";
 import Button from "@/component/ui/Button";
@@ -88,7 +88,7 @@ export default class LogManagerPage extends Component<{}, LogManagerState> {
   };
 
   handleClearLogs = () => {
-    if (confirm(i18n('confirm-clear-logs'))) {
+    if (confirm(t('confirm-clear-logs'))) {
       Logger.clearLogs();
       this.loadLogs();
     }
@@ -160,17 +160,17 @@ export default class LogManagerPage extends Component<{}, LogManagerState> {
       <Page size="xl">
         {/* Header */}
         <PageHeader
-          title={i18n('title-log-manager')}
-          subtitle={i18n('subtitle-log-manager')}
+          title={t('title-log-manager')}
+          subtitle={t('subtitle-log-manager')}
         />
 
         {/* Stats */}
         <StatsGrid>
-          <StatCard label={i18n('label-total-logs')} value={this.state.logs.length} variant="primary"/>
-          <StatCard label={i18n('label-debug')} value={stats['DEBUG']}/>
-          <StatCard label={i18n('label-info')} value={stats['INFO']} variant="primary"/>
-          <StatCard label={i18n('label-warnings')} value={stats['WARN']} variant="warning"/>
-          <StatCard label={i18n('label-errors')} value={stats['ERROR']} variant="danger"/>
+          <StatCard label={t('label-total-logs')} value={this.state.logs.length} variant="primary"/>
+          <StatCard label={t('label-debug')} value={stats['DEBUG']}/>
+          <StatCard label={t('label-info')} value={stats['INFO']} variant="primary"/>
+          <StatCard label={t('label-warnings')} value={stats['WARN']} variant="warning"/>
+          <StatCard label={t('label-errors')} value={stats['ERROR']} variant="danger"/>
         </StatsGrid>
 
         {/* Controls */}
@@ -178,17 +178,17 @@ export default class LogManagerPage extends Component<{}, LogManagerState> {
           <div className="flex flex-wrap gap-4 items-center">
             {/* Filter */}
             <div className="flex items-center gap-2">
-              <span className="text-[0.8125rem] font-semibold text-bmm-muted">{i18n('label-filter')}:</span>
+              <span className="text-[0.8125rem] font-semibold text-bmm-muted">{t('label-filter')}:</span>
               <Select
                 value={filter}
                 onChange={(e) => this.handleFilterChange((e.target as HTMLSelectElement).value as LogLevel | 'all')}
                 compact
               >
-                <option value="all">{i18n('filter-all-levels')}</option>
-                <option value={'DEBUG'}>{i18n('filter-debug')}</option>
-                <option value={'INFO'}>{i18n('filter-info')}</option>
-                <option value={'WARN'}>{i18n('filter-warnings')}</option>
-                <option value={'ERROR'}>{i18n('filter-errors')}</option>
+                <option value="all">{t('filter-all-levels')}</option>
+                <option value={'DEBUG'}>{t('filter-debug')}</option>
+                <option value={'INFO'}>{t('filter-info')}</option>
+                <option value={'WARN'}>{t('filter-warnings')}</option>
+                <option value={'ERROR'}>{t('filter-errors')}</option>
               </Select>
             </div>
 
@@ -196,7 +196,7 @@ export default class LogManagerPage extends Component<{}, LogManagerState> {
             <div className="flex-1 min-w-[200px]">
               <Input
                 type="text"
-                placeholder={i18n('placeholder-search-logs')}
+                placeholder={t('placeholder-search-logs')}
                 value={searchQuery}
                 onInput={this.handleSearchChange}
                 compact
@@ -212,7 +212,7 @@ export default class LogManagerPage extends Component<{}, LogManagerState> {
                 onChange={this.handleAutoRefreshToggle}
                 className="h-4 w-4 accent-bmm-accent"
               />
-              <span className="text-[0.8125rem] font-semibold text-bmm-muted">{i18n('label-auto-refresh')}</span>
+              <span className="text-[0.8125rem] font-semibold text-bmm-muted">{t('label-auto-refresh')}</span>
             </label>
 
             {/* Buttons */}
@@ -222,7 +222,7 @@ export default class LogManagerPage extends Component<{}, LogManagerState> {
               size="sm"
               icon={<Icon name="refresh"/>}
             >
-              {i18n('button-refresh')}
+              {t('button-refresh')}
             </Button>
 
             <Button
@@ -234,12 +234,12 @@ export default class LogManagerPage extends Component<{}, LogManagerState> {
               {isDownloading ? (
                 <>
                   <Icon name="download" spin/>
-                  {i18n('button-downloading')}
+                  {t('button-downloading')}
                 </>
               ) : (
                 <>
                   <Icon name="download"/>
-                  {i18n('button-download-crash-report')}
+                  {t('button-download-crash-report')}
                 </>
               )}
             </Button>
@@ -250,7 +250,7 @@ export default class LogManagerPage extends Component<{}, LogManagerState> {
               size="sm"
               icon={<Icon name="delete"/>}
             >
-              {i18n('button-clear-logs')}
+              {t('button-clear-logs')}
             </Button>
           </div>
 
@@ -259,7 +259,7 @@ export default class LogManagerPage extends Component<{}, LogManagerState> {
             <div className="mt-4 border-t border-bmm-border pt-4">
               <div className="text-[0.8125rem] text-bmm-muted">
                 <span
-                  className="font-medium">{i18n('label-registered-debug-methods', {count: debugMethods.length.toString()})}:</span>
+                  className="font-medium">{t('label-registered-debug-methods', {count: debugMethods.length.toString()})}:</span>
                 <span className="ml-2">{debugMethods.join(', ')}</span>
               </div>
             </div>
@@ -267,14 +267,14 @@ export default class LogManagerPage extends Component<{}, LogManagerState> {
         </Toolbar>
 
         {/* Logs List */}
-        <Panel list title={i18n('label-logs-count', {count: filteredLogs.length.toString()})}>
+        <Panel list title={t('label-logs-count', {count: filteredLogs.length.toString()})}>
           <div className="max-h-[600px] overflow-y-auto">
             {filteredLogs.length === 0 ? (
               <EmptyState
-                title={i18n('message-no-logs-found')}
+                title={t('message-no-logs-found')}
                 description={searchQuery || filter !== 'all'
-                  ? i18n('message-adjust-filters')
-                  : i18n('message-logs-will-appear')}
+                  ? t('message-adjust-filters')
+                  : t('message-logs-will-appear')}
               />
             ) : (
               [...filteredLogs].reverse().map((log) => (

@@ -1,7 +1,7 @@
 import {Component} from 'preact';
 import {CustomExtensionService} from '@/service/CustomExtensionService';
 import type {CustomExtension, CustomExtensionType} from '@/domain/CustomExtension';
-import i18n from '@/i18n/i18n';
+import {t} from '@/i18n/i18n';
 import Alert from '@/component/ui/Alert';
 import Badge from '@/component/ui/Badge';
 import Button from '@/component/ui/Button';
@@ -112,12 +112,12 @@ export default class CustomExtensionModal extends Component<CustomExtensionModal
 
     // Validate
     if (!formData.name.trim()) {
-      this.setState({error: i18n('error-extension-name-required'), success: null});
+      this.setState({error: t('error-extension-name-required'), success: null});
       return;
     }
 
     if (!formData.sourceUrl.trim()) {
-      this.setState({error: i18n('error-extension-source-url-required'), success: null});
+      this.setState({error: t('error-extension-source-url-required'), success: null});
       return;
     }
 
@@ -150,11 +150,11 @@ export default class CustomExtensionModal extends Component<CustomExtensionModal
           editingId: null,
           formData: this.getEmptyFormData(),
           error: null,
-          success: i18n('success-extension-updated'),
+          success: t('success-extension-updated'),
         });
         this.props.onExtensionAdded();
       } else {
-        this.setState({error: i18n('error-update-extension-failed'), success: null});
+        this.setState({error: t('error-update-extension-failed'), success: null});
       }
     } else {
       // Add new
@@ -165,27 +165,27 @@ export default class CustomExtensionModal extends Component<CustomExtensionModal
           showAddForm: false,
           formData: this.getEmptyFormData(),
           error: null,
-          success: i18n('success-extension-added'),
+          success: t('success-extension-added'),
         });
         this.props.onExtensionAdded();
       } else {
-        this.setState({error: i18n('error-add-extension-failed'), success: null});
+        this.setState({error: t('error-add-extension-failed'), success: null});
       }
     }
   };
 
   handleDelete = (id: string) => {
-    if (confirm(i18n('confirm-delete-extension'))) {
+    if (confirm(t('confirm-delete-extension'))) {
       const success = CustomExtensionService.remove(id);
       if (success) {
         this.setState({
           extensions: CustomExtensionService.getAll(),
           error: null,
-          success: i18n('success-extension-deleted'),
+          success: t('success-extension-deleted'),
         });
         this.props.onExtensionAdded();
       } else {
-        this.setState({error: i18n('error-delete-extension-failed'), success: null});
+        this.setState({error: t('error-delete-extension-failed'), success: null});
       }
     }
   };
@@ -209,7 +209,7 @@ export default class CustomExtensionModal extends Component<CustomExtensionModal
     return (
       <ModalBackdrop className="z-[60]">
         <ModalPanel
-          title={editingId ? i18n('button-edit') : i18n('title-add-custom-extension')}
+          title={editingId ? t('button-edit') : t('title-add-custom-extension')}
           actions={<CloseButton
             onClick={this.handleCancel}
             variant="modal"
@@ -220,13 +220,13 @@ export default class CustomExtensionModal extends Component<CustomExtensionModal
                 onClick={this.handleCancel}
                 variant="neutral"
               >
-                {i18n('button-cancel')}
+                {t('button-cancel')}
               </Button>
               <Button
                 onClick={this.handleSubmit}
                 variant="primary"
               >
-                {editingId ? i18n('button-save') : i18n('button-add')}
+                {editingId ? t('button-save') : t('button-add')}
               </Button>
             </div>
           )}
@@ -238,86 +238,86 @@ export default class CustomExtensionModal extends Component<CustomExtensionModal
           )}
 
           <FormGrid>
-            <Field label={`${i18n('label-extension-name')} *`}>
+            <Field label={`${t('label-extension-name')} *`}>
               <Input
                 type="text"
                 value={formData.name}
                 onInput={(e) => this.handleInputChange('name', (e.target as HTMLInputElement).value)}
-                placeholder={i18n('placeholder-extension-name')}
+                placeholder={t('placeholder-extension-name')}
               />
             </Field>
 
-            <Field label={i18n('label-extension-author')}>
+            <Field label={t('label-extension-author')}>
               <Input
                 type="text"
                 value={formData.author}
                 onInput={(e) => this.handleInputChange('author', (e.target as HTMLInputElement).value)}
-                placeholder={i18n('placeholder-extension-author')}
+                placeholder={t('placeholder-extension-author')}
               />
             </Field>
 
-            <Field label={i18n('label-extension-description')} full>
+            <Field label={t('label-extension-description')} full>
               <Textarea
                 value={formData.description}
                 onInput={(e) => this.handleInputChange('description', (e.target as HTMLTextAreaElement).value)}
-                placeholder={i18n('placeholder-extension-description')}
+                placeholder={t('placeholder-extension-description')}
                 rows={3}
               />
             </Field>
 
-            <Field label={`${i18n('label-extension-source-url')} *`} full>
+            <Field label={`${t('label-extension-source-url')} *`} full>
               <Input
                 type="text"
                 value={formData.sourceUrl}
                 onInput={(e) => this.handleInputChange('sourceUrl', (e.target as HTMLInputElement).value)}
-                placeholder={i18n('placeholder-extension-source-url')}
+                placeholder={t('placeholder-extension-source-url')}
               />
             </Field>
 
-            <Field label={i18n('label-extension-type')}>
+            <Field label={t('label-extension-type')}>
               <Select
                 value={formData.type}
                 onChange={(e) => this.handleInputChange('type', (e.target as HTMLSelectElement).value as CustomExtensionType)}
               >
-                <option value="script">{i18n('option-type-script')}</option>
-                <option value="module">{i18n('option-type-module')}</option>
-                <option value="eval">{i18n('option-type-eval')}</option>
+                <option value="script">{t('option-type-script')}</option>
+                <option value="module">{t('option-type-module')}</option>
+                <option value="eval">{t('option-type-eval')}</option>
               </Select>
             </Field>
 
-            <Field label={i18n('label-extension-icon-url')}>
+            <Field label={t('label-extension-icon-url')}>
               <Input
                 type="text"
                 value={formData.icon}
                 onInput={(e) => this.handleInputChange('icon', (e.target as HTMLInputElement).value)}
-                placeholder={i18n('placeholder-extension-icon-url')}
+                placeholder={t('placeholder-extension-icon-url')}
               />
             </Field>
 
-            <Field label={i18n('label-extension-repository-url')}>
+            <Field label={t('label-extension-repository-url')}>
               <Input
                 type="text"
                 value={formData.repository}
                 onInput={(e) => this.handleInputChange('repository', (e.target as HTMLInputElement).value)}
-                placeholder={i18n('placeholder-extension-repository-url')}
+                placeholder={t('placeholder-extension-repository-url')}
               />
             </Field>
 
-            <Field label={i18n('label-extension-website-url')}>
+            <Field label={t('label-extension-website-url')}>
               <Input
                 type="text"
                 value={formData.website}
                 onInput={(e) => this.handleInputChange('website', (e.target as HTMLInputElement).value)}
-                placeholder={i18n('placeholder-extension-website-url')}
+                placeholder={t('placeholder-extension-website-url')}
               />
             </Field>
 
-            <Field label={i18n('label-extension-tags')} full>
+            <Field label={t('label-extension-tags')} full>
               <Input
                 type="text"
                 value={formData.tags}
                 onInput={(e) => this.handleInputChange('tags', (e.target as HTMLInputElement).value)}
-                placeholder={i18n('placeholder-extension-tags')}
+                placeholder={t('placeholder-extension-tags')}
               />
             </Field>
           </FormGrid>
@@ -332,8 +332,8 @@ export default class CustomExtensionModal extends Component<CustomExtensionModal
     return (
       <ModalBackdrop className="z-50">
         <ModalPanel
-          title={i18n('button-manage-custom-extensions')}
-          subtitle={i18n('message-custom-extensions-info')}
+          title={t('button-manage-custom-extensions')}
+          subtitle={t('message-custom-extensions-info')}
           actions={<CloseButton
             onClick={this.props.onClose}
             variant="modal"
@@ -343,7 +343,7 @@ export default class CustomExtensionModal extends Component<CustomExtensionModal
             variant="neutral"
             className="w-full"
           >
-            {i18n('button-close')}
+            {t('button-close')}
           </Button>}
         >
           {/* Messages */}
@@ -361,18 +361,18 @@ export default class CustomExtensionModal extends Component<CustomExtensionModal
           {/* Extensions List */}
           <Panel
             list
-            title={`${i18n('label-custom-extensions')} (${extensions.length})`}
+            title={`${t('label-custom-extensions')} (${extensions.length})`}
             actions={(
               <Button
                 onClick={this.handleAddNew}
                 variant="primary"
               >
-                + {i18n('button-add-custom-extension')}
+                + {t('button-add-custom-extension')}
               </Button>
             )}
           >
             {extensions.length === 0 ? (
-              <EmptyState title={i18n('message-no-custom-extensions')}/>
+              <EmptyState title={t('message-no-custom-extensions')}/>
             ) : (
               <div>
                 {extensions.map(ext => (
@@ -390,12 +390,12 @@ export default class CustomExtensionModal extends Component<CustomExtensionModal
                       )}
                       <div className="flex-1 min-w-0">
                         <h4 className="text-[0.96875rem] font-bold leading-snug text-bmm-ink">{ext.name}</h4>
-                        <p className="text-[0.8125rem] text-bmm-muted">by {ext.author}</p>
+                        <p className="text-[0.8125rem] text-bmm-muted">{t('label-author-by', {author: ext.author})}</p>
                         {ext.description && (
                           <p className="mt-2 text-sm leading-relaxed text-bmm-muted">{ext.description}</p>
                         )}
                         <div className="mt-2 break-all text-[0.8125rem] text-bmm-muted">
-                          <span className="font-medium">URL:</span> {ext.sourceUrl}
+                          <span className="font-medium">{t('label-url')}:</span> {ext.sourceUrl}
                         </div>
                         {ext.tags && ext.tags.length > 0 && (
                           <div className="flex gap-1 mt-2 flex-wrap">
@@ -413,14 +413,14 @@ export default class CustomExtensionModal extends Component<CustomExtensionModal
                           variant="primary"
                           size="sm"
                         >
-                          {i18n('button-edit')}
+                          {t('button-edit')}
                         </Button>
                         <Button
                           onClick={() => this.handleDelete(ext.id)}
                           variant="danger"
                           size="sm"
                         >
-                          {i18n('button-delete')}
+                          {t('button-delete')}
                         </Button>
                       </div>
                     </div>

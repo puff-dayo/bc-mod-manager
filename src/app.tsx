@@ -1,6 +1,6 @@
 import '@/app.css'
 import {Component} from "preact";
-import i18n from "@/i18n/i18n.ts";
+import {t} from "@/i18n/i18n.ts";
 import RegistryManagerPage from "@/page/registrymanager/RegistryManagerPage.tsx";
 import ModManagerPage from "@/page/modmanager/ModManagerPage.tsx";
 import LogManagerPage from "@/page/logmanager/LogManagerPage.tsx";
@@ -81,22 +81,22 @@ export default class App extends Component<{}, AppState> {
     const launcherItems: AppLauncherItem[] = [
       {
         id: 'mod-manager',
-        label: i18n('button-mod-manager'),
+        label: t('button-mod-manager'),
         onClick: () => this.openPage('mod-manager'),
       },
       {
         id: 'registry-manager',
-        label: i18n('button-registry-manager'),
+        label: t('button-registry-manager'),
         onClick: () => this.openPage('registry-manager'),
       },
       {
         id: 'log-viewer',
-        label: i18n('button-log-viewer'),
+        label: t('button-log-viewer'),
         onClick: () => this.openPage('log-viewer'),
       },
       {
         id: 'settings',
-        label: i18n('button-settings'),
+        label: t('button-settings'),
         onClick: () => this.openPage('settings'),
       },
     ];
@@ -118,7 +118,7 @@ export default class App extends Component<{}, AppState> {
               <CloseButton
                 variant="app"
                 onClick={this.closePage}
-                title={i18n('button-close')}
+                title={t('button-close')}
               />
 
               {currentPage === 'mod-manager' && <ModManagerPage/>}

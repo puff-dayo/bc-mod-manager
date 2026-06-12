@@ -1,6 +1,6 @@
 import type {JSX} from 'preact';
 import cn from '@/util/cn.ts';
-import i18n from '@/i18n/i18n';
+import {t} from '@/i18n/i18n';
 
 type CloseButtonVariant = 'app' | 'dialog' | 'modal';
 
@@ -22,7 +22,7 @@ export default function CloseButton({
     <button
       {...props}
       type={type}
-      title={title ?? i18n('button-close')}
+      title={title ?? t('button-close')}
       className={cn(
         'inline-flex h-9 w-9 items-center justify-center rounded-full border border-bmm-border bg-bmm-surface text-2xl font-medium leading-none text-bmm-muted shadow-bmm-control transition-[background,border-color,color,transform] duration-150 hover:-translate-y-px hover:border-red-200 hover:bg-red-50 hover:text-red-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/20 focus-visible:ring-offset-2',
         variantClass,

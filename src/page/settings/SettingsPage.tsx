@@ -1,5 +1,5 @@
 import {Component} from "preact";
-import i18n from "@/i18n/i18n.ts";
+import {t} from "@/i18n/i18n.ts";
 import {SettingsService} from "@/service/SettingsService.ts";
 import type {AppSettings} from "@/domain/Settings";
 import Page from "@/component/ui/Page.tsx";
@@ -45,27 +45,27 @@ export default class SettingsPage extends Component<{}, SettingsPageState> {
 
     return (
       <Page size="wide">
-        <PageHeader title={i18n('title-settings')} subtitle={i18n('subtitle-settings')}/>
+        <PageHeader title={t('title-settings')} subtitle={t('subtitle-settings')}/>
 
-        <Panel title={i18n('settings-section-loading')} body>
+        <Panel title={t('settings-section-loading')} body>
           <div className="flex items-start justify-between gap-4">
             <div className="min-w-0">
-              <p className="m-0 text-sm font-bold text-bmm-ink">{i18n('settings-mod-cache-label')}</p>
+              <p className="m-0 text-sm font-bold text-bmm-ink">{t('settings-mod-cache-label')}</p>
               <p className="m-0 mt-1 text-[0.8125rem] leading-5 text-bmm-muted">
-                {i18n('settings-mod-cache-description')}
+                {t('settings-mod-cache-description')}
               </p>
             </div>
             <Toggle
               checked={settings.modCacheEnabled}
               onChange={this.handleToggleModCache}
-              label={i18n('settings-mod-cache-label')}
+              label={t('settings-mod-cache-label')}
             />
           </div>
 
           <div className="mt-3.5 flex flex-wrap items-center gap-3 border-t border-bmm-border pt-3.5">
-            <p className="m-0 text-[0.8125rem] text-bmm-muted">{i18n('settings-note-reload')}</p>
+            <p className="m-0 text-[0.8125rem] text-bmm-muted">{t('settings-note-reload')}</p>
             <Button variant="neutral" size="sm" icon={<Icon name="refresh"/>} onClick={this.handleReload}>
-              {i18n('loading-button-reload')}
+              {t('loading-button-reload')}
             </Button>
           </div>
         </Panel>
