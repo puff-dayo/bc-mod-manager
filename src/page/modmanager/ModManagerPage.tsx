@@ -16,12 +16,7 @@ import Input from "@/component/ui/Input";
 import List from "@/component/ui/List";
 import ListRow from "@/component/ui/ListRow";
 import Page from "@/component/ui/Page";
-import PageHeader from "@/component/ui/PageHeader";
 import Select from "@/component/ui/Select";
-import StatCard from "@/component/ui/StatCard";
-import StatsGrid from "@/component/ui/StatsGrid";
-import Toolbar from "@/component/ui/Toolbar";
-import ToolbarPrimary from "@/component/ui/ToolbarPrimary";
 
 
 const LOAD_STATUS_LABEL_KEY: Record<ModLoadStatus, string> = {
@@ -37,6 +32,44 @@ const LOAD_STATUS_VARIANT: Record<ModLoadStatus, BadgeVariant> = {
   loaded: 'success',
   error: 'danger',
 };
+
+type TagColorStyle = {
+  backgroundColor: string;
+  borderColor: string;
+  color: string;
+};
+
+function getSortedUniqueTags(mods: ModManagerState['availableMods']): string[] {
+  return Array.from(
+    new Set(
+      mods.flatMap(mod => mod.addon.tags || [])
+    )
+  ).sort((a, b) => a.localeCompare(b));
+}
+
+function buildTagColorMap(tags: string[]): Map<string, TagColorStyle> {
+  const map = new Map<string, TagColorStyle>();
+
+  if (tags.length === 0) {
+    return map;
+  }
+
+  tags.forEach((tag, index) => {
+    const hue = Math.round((index * 360) / tags.length);
+
+    map.set(tag, {
+      backgroundColor: `hsl(${hue} 62% 96%)`,
+      borderColor: `hsl(${hue} 56% 72%)`,
+      color: `hsl(${hue} 48% 30%)`,
+    });
+  });
+
+  return map;
+}
+
+function getTagStyle(tagColorMap: Map<string, TagColorStyle>, tag: string): TagColorStyle | undefined {
+  return tagColorMap.get(tag);
+}
 
 interface ModManagerState {
   availableMods: Array<{
@@ -249,60 +282,100 @@ export default class ModManagerPage extends Component<{}, ModManagerState> {
     const enabledCount = ModService.getEnabledCount();
     const totalCount = this.state.availableMods.length;
 
+    const sortedTags = getSortedUniqueTags(this.state.availableMods);
+    const tagColorMap = buildTagColorMap(sortedTags);
+
     const loadEntries = Array.from(this.state.loadStatus.values());
     const loadedCount = loadEntries.filter(entry => entry.status === 'loaded').length;
     const failedCount = loadEntries.filter(entry => entry.status === 'error').length;
 
     return (
       <Page size="xl">
-        <PageHeader
-          title={i18n('title-mod-manager')}
-          actions={<Button
-            onClick={this.handleOpenCustomExtensionModal}
-            variant="neutral"
-          >
-            + {i18n('button-manage-custom-extensions')}
-          </Button>}
-        />
+        <div className="mb-3 space-y-2">
+          <h1 className="text-center text-lg font-extrabold tracking-tight text-bmm-ink">
+            {i18n('title-mod-manager')}
+          </h1>
 
-        {/* Error Message */}
+          <div className="flex flex-col gap-2 rounded-md border border-bmm-border bg-bmm-surface px-3 py-2 text-xs lg:flex-row lg:items-center">
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 lg:min-w-0 lg:flex-1">
+              <span className="font-medium text-bmm-accent">
+                <strong className="font-extrabold">{totalCount}</strong>{' '}
+                {i18n('label-total-mods')}
+              </span>
+
+              <span className="text-bmm-border-strong">·</span>
+
+              <span className="font-medium text-emerald-700">
+                <strong className="font-extrabold">{enabledCount}</strong>{' '}
+                {i18n('label-enabled-mods')}
+              </span>
+
+              <span className="text-bmm-border-strong">·</span>
+
+              <span className="font-medium text-amber-700">
+                <strong className="font-extrabold">{totalCount - enabledCount}</strong>{' '}
+                {i18n('label-disabled-mods')}
+              </span>
+
+              <span className="text-bmm-border-strong">·</span>
+
+              <span className="font-medium text-emerald-700">
+                <strong className="font-extrabold">{loadedCount}</strong>{' '}
+                {i18n('label-loaded-mods')}
+              </span>
+
+              {failedCount > 0 && (
+                <>
+                  <span className="text-bmm-border-strong">·</span>
+
+                  <span className="font-medium text-red-700">
+                    <strong className="font-extrabold">{failedCount}</strong>{' '}
+                    {i18n('label-failed-mods')}
+                  </span>
+                </>
+              )}
+            </div>
+
+            <div className="min-w-0 lg:w-[22rem]">
+              <Input
+                type="text"
+                aria-label={i18n('placeholder-search-mods')}
+                placeholder={i18n('placeholder-search-mods')}
+                value={this.state.searchQuery}
+                onInput={this.handleSearchChange}
+                className="h-8 w-full border-bmm-border-strong bg-bmm-surface-raised px-3 shadow-inner focus:border-bmm-accent focus:bg-white focus:shadow-[0_0_0_2px_rgb(37_99_235/0.12)]"
+              />
+            </div>
+
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center lg:shrink-0 lg:justify-end">
+              <Button
+                onClick={this.handleOpenCustomExtensionModal}
+                variant="neutral"
+                size="sm"
+                className="shrink-0"
+              >
+                + {i18n('button-manage-custom-extensions')}
+              </Button>
+
+              <Select
+                value={this.state.filter}
+                onChange={this.handleFilterChange}
+                compact
+                className="w-full sm:w-auto sm:min-w-40"
+              >
+                <option value="all">{i18n('filter-all-mods')}</option>
+                <option value="enabled">{i18n('filter-enabled-only')}</option>
+                <option value="disabled">{i18n('filter-disabled-only')}</option>
+              </Select>
+            </div>
+          </div>
+        </div>
+
         {error && (
           <Alert>
             {error}
           </Alert>
         )}
-
-        {/* Stats Bar */}
-        <StatsGrid>
-          <StatCard label={i18n('label-total-mods')} value={totalCount} variant="primary"/>
-          <StatCard label={i18n('label-enabled-mods')} value={enabledCount} variant="success"/>
-          <StatCard label={i18n('label-disabled-mods')} value={totalCount - enabledCount}/>
-          <StatCard label={i18n('label-loaded-mods')} value={loadedCount} variant="success"/>
-          {failedCount > 0 && (
-            <StatCard label={i18n('label-failed-mods')} value={failedCount} variant="danger"/>
-          )}
-        </StatsGrid>
-
-        {/* Filters and Search */}
-        <Toolbar>
-          <ToolbarPrimary>
-            <Input
-              type="text"
-              placeholder={i18n('placeholder-search-mods')}
-              value={this.state.searchQuery}
-              onInput={this.handleSearchChange}
-            />
-          </ToolbarPrimary>
-          <Select
-            value={this.state.filter}
-            onChange={this.handleFilterChange}
-            className="w-auto min-w-40"
-          >
-            <option value="all">{i18n('filter-all-mods')}</option>
-            <option value="enabled">{i18n('filter-enabled-only')}</option>
-            <option value="disabled">{i18n('filter-disabled-only')}</option>
-          </Select>
-        </Toolbar>
 
         {/* Mod List */}
         <List>
@@ -329,231 +402,264 @@ export default class ModManagerPage extends Component<{}, ModManagerState> {
                   : (this.state.pendingVersions.get(uniqueId) || mod.addon.versions[0]?.distribution || '');
 
                 const isExpanded = expandedModId === uniqueId;
+                const categoryTags = mod.addon.tags?.slice(0, 4) || [];
+                const authorLabel = mod.addon.author ? `by ${mod.addon.author}` : '';
 
                 return (
-                  <ListRow key={uniqueId}>
-                    {/* Mod Header */}
-                    <div
-                      className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(17.5rem,19.5rem)] lg:items-start">
-                      <div className="flex min-w-0 items-start gap-3.5">
-                        <div
-                          className="flex h-12 w-12 flex-none items-center justify-center overflow-hidden rounded-lg border border-bmm-border bg-bmm-surface-muted text-sm font-bold text-bmm-muted shadow-bmm-control"
-                          aria-hidden={mod.addon.icon ? undefined : 'true'}
-                        >
-                          {mod.addon.icon ? (
-                            <img
-                              src={mod.addon.icon}
-                              alt={modName}
-                              className="h-full w-full object-cover"
-                              onError={(e) => {
-                                (e.target as HTMLImageElement).style.display = 'none';
-                              }}
-                            />
-                          ) : modInitial}
-                        </div>
+                    <ListRow
+                      key={uniqueId}
+                      className="relative px-3 py-2 transition-[background,box-shadow] duration-150 hover:bg-slate-50 hover:shadow-[inset_3px_0_0_rgb(100_116_139),0_1px_0_rgb(15_23_42/0.06)]"
+                    >
+                    <div className="grid gap-2 sm:grid-cols-[2rem_minmax(0,1fr)_auto_auto] sm:items-center sm:gap-3">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-md border border-bmm-border bg-bmm-surface-raised text-xs font-bold text-bmm-muted">
+                        {mod.addon.icon ? (
+                          <img
+                            src={mod.addon.icon}
+                            alt=""
+                            className="h-6 w-6 rounded object-cover"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).style.display = 'none';
+                            }}
+                          />
+                        ) : (
+                          modInitial
+                        )}
+                      </div>
 
-                        {/* Main Content */}
-                        <div className="min-w-0 flex-1">
-                          {/* Title Row */}
-                          <div className="mb-1.5 flex min-w-0 flex-wrap items-center gap-2">
-                            <h3 className="min-w-0 text-[0.96875rem] font-bold leading-snug text-bmm-ink">
-                              {modName}
-                            </h3>
-                            {mod.addon.tags && mod.addon.tags.length > 0 && (
-                              <div className="flex min-w-0 flex-wrap gap-1">
-                                {mod.addon.tags.slice(0, 3).map(tag => (
-                                  <Badge key={tag} className="max-w-[9rem] overflow-hidden text-ellipsis">
+                      <div className="min-w-0">
+                        <div className="flex min-w-0 items-center gap-1.5 overflow-hidden">
+                          <h3 className="truncate text-sm font-bold leading-5 text-bmm-ink">
+                            {modName}
+                          </h3>
+
+                          {authorLabel && (
+                            <>
+                              <span className="shrink-0 text-xs text-bmm-faint">-</span>
+                              <span className="shrink-0 text-xs text-bmm-faint">
+                                {authorLabel}
+                              </span>
+                            </>
+                          )}
+
+                          {categoryTags.length > 0 && (
+                            <>
+                              <span className="shrink-0 text-xs text-bmm-faint">-</span>
+
+                              <div className="flex min-w-0 shrink items-center gap-1 overflow-hidden">
+                                {categoryTags.map(tag => (
+                                  <Badge
+                                    key={tag}
+                                    variant="neutral"
+                                    style={getTagStyle(tagColorMap, tag)}
+                                    className="shrink-0 px-1.5 py-0.5 text-[0.6875rem] leading-none font-light shadow-none"
+                                  >
                                     {tag}
                                   </Badge>
                                 ))}
                               </div>
-                            )}
-                          </div>
+                            </>
+                          )}
 
-                          {/* Author and ID */}
-                          <div className="mb-2 flex flex-wrap gap-x-2 gap-y-1 text-[0.8125rem] text-bmm-muted">
-                            <span className="min-w-0 font-medium">by {mod.addon.author}</span>
-                            <span className="text-bmm-faint">•</span>
-                            <span className="min-w-0 break-all">ID: {mod.addon.id}</span>
-                          </div>
+                          {isEnabled && (
+                            <div className="ml-1 flex shrink-0 items-center gap-1">
+                              <Badge
+                                variant="success"
+                                className="px-1.5 py-0.5 text-[0.6875rem] font-light leading-none"
+                              >
+                                {i18n('label-installed')}
+                              </Badge>
+                              {this.renderLoadBadge(uniqueId)}
+                            </div>
+                          )}
+                        </div>
 
-                          {/* Description */}
-                          <p className="m-0 line-clamp-2 text-sm leading-relaxed text-bmm-muted">
+                        {mod.addon.description && (
+                          <p className="mt-0.5 truncate text-xs leading-4 text-bmm-muted">
                             {mod.addon.description}
                           </p>
-                        </div>
-                      </div>
-
-                      <div className="flex min-w-0 flex-col gap-3 lg:items-stretch">
-                        <div className="flex flex-wrap items-center gap-1.5 lg:justify-end">
-                          {isEnabled && (
-                            <Badge variant="success">
-                              {i18n('label-installed')}
-                            </Badge>
-                          )}
-                          {isEnabled && this.renderLoadBadge(uniqueId)}
-                          {!isEnabled && (
-                            <Badge variant="neutral">
-                              {i18n('filter-disabled-only')}
-                            </Badge>
-                          )}
-                        </div>
-
-                        {mod.addon.versions.length > 0 && (
-                          <label className="flex min-w-0 flex-wrap items-center gap-2 lg:justify-end">
-                            <span className="whitespace-nowrap text-[0.8125rem] font-semibold text-bmm-muted">
-                              {i18n('label-selected-version')}:
-                            </span>
-                            <Select
-                              value={selectedVersion}
-                              onChange={(e) => this.handleVersionChange(
-                                mod.addon.id,
-                                mod.registryId,
-                                (e.target as HTMLSelectElement).value,
-                                isEnabled
-                              )}
-                              compact
-                              className="w-auto max-w-full sm:max-w-[12rem]"
-                            >
-                              {mod.addon.versions.map(v => (
-                                <option key={v.distribution} value={v.distribution}>
-                                  {v.distribution}
-                                </option>
-                              ))}
-                            </Select>
-                          </label>
                         )}
-
-                        <div className="flex flex-wrap items-center gap-2 lg:justify-end">
-                          <Button
-                            onClick={() => this.toggleExpanded(uniqueId)}
-                            variant="ghost"
-                            size="sm"
-                            icon={<Icon name="chevron" open={isExpanded}/>}
-                          >
-                            {isExpanded ? i18n('button-less') : i18n('button-more')}
-                          </Button>
-                          {isEnabled ? (
-                            <Button
-                              onClick={() => this.handleRemoveMod(mod.addon.id, mod.registryId)}
-                              variant="danger"
-                              size="sm"
-                              title="Remove this mod"
-                            >
-                              {i18n('button-remove-mod')}
-                            </Button>
-                          ) : (
-                            <Button
-                              onClick={() => this.handleInstallMod(mod.addon.id, mod.registryId)}
-                              variant="primary"
-                              size="sm"
-                              title="Install this mod"
-                            >
-                              {i18n('button-install-mod')}
-                            </Button>
-                          )}
-                        </div>
                       </div>
 
-                      {/* Expanded Details */}
-                      {isExpanded && (
-                        <div
-                          className="rounded-lg border border-bmm-border bg-bmm-surface-raised p-3.5 shadow-bmm-control lg:col-span-2">
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                            {mod.addon.repository && (
-                              <div>
-                                <span className="font-bold text-bmm-ink">{i18n('label-repository')}:</span>
-                                <a
-                                  href={mod.addon.repository}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="ml-2 break-all font-semibold text-bmm-accent no-underline hover:text-bmm-accent-strong hover:underline"
-                                >
-                                  {mod.addon.repository}
-                                </a>
-                              </div>
-                            )}
-                            {mod.addon.website && (
-                              <div>
-                                <span className="font-bold text-bmm-ink">{i18n('label-website')}:</span>
-                                <a
-                                  href={mod.addon.website}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="ml-2 break-all font-semibold text-bmm-accent no-underline hover:text-bmm-accent-strong hover:underline"
-                                >
-                                  {mod.addon.website}
-                                </a>
-                              </div>
-                            )}
-                            {mod.addon.discord && (
-                              <div>
-                                <span className="font-bold text-bmm-ink">{i18n('label-discord')}:</span>
-                                <a
-                                  href={mod.addon.discord}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="ml-2 font-semibold text-bmm-accent no-underline hover:text-bmm-accent-strong hover:underline"
-                                >
-                                  {i18n('button-join-discord')}
-                                </a>
-                              </div>
-                            )}
-                            {mod.addon.type && (
-                              <div>
-                                <span className="font-bold text-bmm-ink">{i18n('label-type')}:</span>
-                                <span className="ml-2 text-[0.8125rem] text-bmm-muted">{mod.addon.type}</span>
-                              </div>
-                            )}
-                            {isEnabled && (() => {
-                              const loadEntry = this.state.loadStatus.get(uniqueId);
-                              return (
-                                <div className="md:col-span-2">
-                                  <span className="font-bold text-bmm-ink">{i18n('label-load-status')}:</span>
-                                  <span className="ml-2 inline-flex items-center gap-2 align-middle">
-                                    {this.renderLoadBadge(uniqueId)}
-                                    {loadEntry?.loadType && (
-                                      <span className="text-[0.8125rem] text-bmm-muted">{loadEntry.loadType}</span>
-                                    )}
-                                  </span>
-                                  {loadEntry?.status === 'error' && loadEntry.error && (
-                                    <p className="m-0 mt-1.5 break-words text-[0.8125rem] leading-5 text-red-600">
-                                      {loadEntry.error}
-                                    </p>
-                                  )}
-                                  {loadEntry?.postLoadError && (
-                                    <p className="m-0 mt-1.5 break-words text-[0.8125rem] leading-5 text-amber-700">
-                                      {i18n('label-post-load-error')}: {loadEntry.postLoadError}
-                                    </p>
-                                  )}
-                                </div>
-                              );
-                            })()}
-                            <div>
-                              <span className="font-bold text-bmm-ink">{i18n('label-registry')}:</span>
-                              <span
-                                className="ml-2 break-all text-[0.8125rem] text-bmm-muted">{mod.registryUrl}</span>
-                            </div>
-                            {mod.addon.versions.length > 0 && (
-                              <div className="md:col-span-2">
-                                <span
-                                    className="font-bold text-bmm-ink">{i18n('label-available-versions')}:</span>
-                                <div className="mt-1 flex gap-2 flex-wrap">
-                                  {mod.addon.versions.map(v => (
-                                    <Badge
-                                      key={v.distribution}
-                                      variant={(v.distribution === selectedVersion ? 'primary' : 'neutral') as BadgeVariant}
-                                    >
-                                      {v.distribution}
-                                    </Badge>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        </div>
+                      <Button
+                        onClick={() => this.toggleExpanded(uniqueId)}
+                        variant="ghost"
+                        size="sm"
+                        icon={
+                          <Icon
+                            name="chevron"
+                            className={isExpanded ? '-rotate-90' : 'rotate-90'}
+                          />
+                        }
+                        className="justify-start sm:justify-center"
+                      >
+                        {isExpanded ? i18n('button-less') : i18n('button-more')}
+                      </Button>
+
+                      {isEnabled ? (
+                        <Button
+                          onClick={() => this.handleRemoveMod(mod.addon.id, mod.registryId)}
+                          variant="danger"
+                          size="sm"
+                          title="Remove this mod"
+                          className="justify-start sm:justify-center"
+                        >
+                          {i18n('button-remove-mod')}
+                        </Button>
+                      ) : (
+                        <Button
+                          onClick={() => this.handleInstallMod(mod.addon.id, mod.registryId)}
+                          variant="primary"
+                          size="sm"
+                          title="Install this mod"
+                          className="justify-start sm:justify-center"
+                        >
+                          {i18n('button-install-mod')}
+                        </Button>
                       )}
                     </div>
+
+                    {isExpanded && (
+                      <div className="mt-2 border-t border-bmm-border/70 pt-2 text-xs leading-5 text-bmm-muted">
+                        {mod.addon.description && (
+                          <p className="mb-2 text-bmm-ink">
+                            {mod.addon.description}
+                          </p>
+                        )}
+
+                        {mod.addon.tags && mod.addon.tags.length > 0 && (
+                          <div className="mb-2 flex flex-wrap gap-1">
+                            {mod.addon.tags.map(tag => (
+                              <Badge
+                                key={tag}
+                                variant="neutral"
+                                style={getTagStyle(tagColorMap, tag)}
+                                className="px-1.5 py-0.5 text-[0.6875rem] leading-none shadow-none"
+                              >
+                                {tag}
+                              </Badge>
+                            ))}
+                          </div>
+                        )}
+
+                        <div className="grid gap-x-4 gap-y-1 sm:grid-cols-2">
+                            {mod.addon.versions.length > 0 && (
+                              <div className="flex min-w-0 items-center gap-2">
+                                <span className="shrink-0">
+                                  {i18n('label-selected-version')}:
+                                </span>
+
+                                <Select
+                                  value={selectedVersion}
+                                  onChange={(e) =>
+                                    this.handleVersionChange(
+                                      mod.addon.id,
+                                      mod.registryId,
+                                      (e.target as HTMLSelectElement).value,
+                                      isEnabled
+                                    )
+                                  }
+                                  compact
+                                  className="h-7 w-36"
+                                >
+                                  {mod.addon.versions.map(v => (
+                                    <option key={v.distribution} value={v.distribution}>
+                                      {v.distribution}
+                                    </option>
+                                  ))}
+                                </Select>
+                              </div>
+                            )}
+
+                          <div>
+                            ID: <span className="font-mono text-bmm-ink">{mod.addon.id}</span>
+                          </div>
+
+                          <div>
+                            {i18n('label-registry')}: <span className="text-bmm-ink">{mod.registryUrl}</span>
+                          </div>
+
+                          {mod.addon.type && (
+                            <div>
+                              {i18n('label-type')}: <span className="text-bmm-ink">{mod.addon.type}</span>
+                            </div>
+                          )}
+
+                          {mod.addon.repository && (
+                            <div className="min-w-0">
+                              {i18n('label-repository')}:{' '}
+                              <a
+                                href={mod.addon.repository}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="break-all text-bmm-accent hover:text-bmm-accent-strong"
+                              >
+                                {mod.addon.repository}
+                              </a>
+                            </div>
+                          )}
+
+                          {mod.addon.website && (
+                            <div className="min-w-0">
+                              {i18n('label-website')}:{' '}
+                              <a
+                                href={mod.addon.website}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="break-all text-bmm-accent hover:text-bmm-accent-strong"
+                              >
+                                {mod.addon.website}
+                              </a>
+                            </div>
+                          )}
+
+                          {mod.addon.discord && (
+                            <div className="min-w-0">
+                              {i18n('label-discord')}:{' '}
+                              <a
+                                href={mod.addon.discord}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="break-all text-bmm-accent hover:text-bmm-accent-strong"
+                              >
+                                {i18n('button-join-discord')}
+                              </a>
+                            </div>
+                          )}
+                        </div>
+
+                        {isEnabled && (() => {
+                          const loadEntry = this.state.loadStatus.get(uniqueId);
+
+                          return (
+                            <div className="mt-2 rounded-md border border-bmm-border bg-bmm-surface-muted px-2 py-1.5">
+                              <div className="flex flex-wrap items-center gap-1.5">
+                                <span>{i18n('label-load-status')}:</span>
+                                {this.renderLoadBadge(uniqueId)}
+                                {loadEntry?.loadType && (
+                                  <span className="text-bmm-faint">
+                                    {loadEntry.loadType}
+                                  </span>
+                                )}
+                              </div>
+
+                              {loadEntry?.status === 'error' && loadEntry.error && (
+                                <pre className="mt-1 max-h-32 overflow-auto whitespace-pre-wrap rounded border border-red-200 bg-red-50 p-2 text-[0.6875rem] text-red-700">
+                                  {loadEntry.error}
+                                </pre>
+                              )}
+
+                              {loadEntry?.postLoadError && (
+                                <pre className="mt-1 max-h-32 overflow-auto whitespace-pre-wrap rounded border border-red-200 bg-red-50 p-2 text-[0.6875rem] text-red-700">
+                                  {i18n('label-post-load-error')}: {loadEntry.postLoadError}
+                                </pre>
+                              )}
+                            </div>
+                          );
+                        })()}
+
+
+                      </div>
+                    )}
                   </ListRow>
                 );
               })}
