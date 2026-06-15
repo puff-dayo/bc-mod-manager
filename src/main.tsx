@@ -9,6 +9,7 @@ import {ModService} from "@/service/ModService.ts";
 import {RegistryService} from "@/service/RegistryService.ts";
 import {RegistryDataService} from "@/service/RegistryDataService.ts";
 import {ModLoaderService} from "@/service/ModLoaderService.ts";
+import {FusamMigrationService} from "@/service/FusamMigrationService.ts";
 
 Logger.info('BC Mod Manager started');
 
@@ -24,6 +25,9 @@ RegistryDataService.fetchAllRegistries(RegistryService.getAll())
 // Initialize mod loader to preload enabled mods
 ModLoaderService.initialize();
 ModLoaderService.preloadAllEnabledMods();
+
+// Offer to import a previous FUSAM configuration when BMM has no enabled mods.
+FusamMigrationService.init();
 
 // System Information
 LogService.registerDebugMethod('System Information', () => {

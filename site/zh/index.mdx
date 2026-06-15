@@ -1,51 +1,12 @@
 ---
 title: BC Mod Manager
-description: 面向 Bondage Club 的模组管理器和加载器，兼容 FUSAM，并提供更强的 registry 管理、加载观测、缓存与崩溃诊断。
+description: 面向 Bondage Club 的好用模组管理器与加载器 —— 安装模组、切换版本，并清楚看到加载情况。
 order: 1
 ---
 
-BC Mod Manager (BMM) 是一个面向
-[Bondage Club](https://www.bondageprojects.com/club_game/) 的模组管理器和加载器。它兼容现有
-FUSAM manifest 格式，同时提供更强的 registry 管理、加载状态观测、缓存更新提示、BC Mod SDK
-接管与崩溃诊断能力。
-
-项目产物可通过油猴脚本、书签或控制台注入到 Bondage Club 页面中运行。运行后，BMM 会在游戏登录/偏好设置界面显示启动按钮，并在独立
-Shadow DOM 中渲染管理界面，尽量减少与游戏原有样式和其他插件的冲突。
-
-## 功能概览
-
-- **模组管理**：安装、移除、搜索、筛选、选择 stable/beta/dev 等 distribution，并显示实际加载状态。
-- **Registry 管理**：内置多个预设 FUSAM registry，也可以添加、编辑、刷新自定义 registry。
-- **自定义扩展**：直接添加 `http://`、`https://` 源，用于本地开发和临时加载脚本。
-- **多种加载类型**：支持 classic script、ES module 和 eval/global-scope 执行。
-- **加载进度窗口**：展示 pending/loading/loaded/error、耗时、失败原因，并在启动期间提示旧版本缓存。
-- **模组缓存**：可使用浏览器 HTTP 缓存加速启动，并通过内容 hash 检测更新；也可在设置中关闭缓存。
-- **FUSAM 兼容层**：暴露 `window.FUSAM.present`、`window.FUSAM.addons`、`registerDebugMethod`
-  和 modal API，兼容依赖 FUSAM 环境的插件。
-- **崩溃诊断**：捕获 Mod SDK hook/patch 崩溃，展示调用栈、相关 mod、已加载 mod，并支持上传/复制 crash report。
-- **日志查看器**：内置日志面板，支持等级筛选、搜索、自动刷新、下载调试报告。
-- **多语言**：当前包含 EN、CN、TW、DE、FR、RU、UA 翻译资源。
-
-## 相比 FUSAM 的优势
-
-FUSAM 是 Bondage Club 社区中非常重要的现有插件加载器，许多插件文档都会推荐通过 FUSAM 安装。BMM
-的目标不是破坏这个生态，而是在兼容 FUSAM manifest 和部分运行时 API 的前提下，补上更适合复杂模组组合和开发调试的能力。
-
-| 能力 | FUSAM | BC Mod Manager |
-| --- | --- | --- |
-| Manifest 生态 | 使用 FUSAM addon manifest | 直接兼容 FUSAM manifest，并支持多个 registry 并存 |
-| 自定义来源 | 支持通过 `?fusam=` 指向开发源 | 在 UI 中长期保存自定义扩展，支持 `file://` 本地脚本 |
-| 加载可观测性 | 主要关注启用/禁用 | 显示每个模组的 pending/loading/loaded/error、耗时和错误详情 |
-| 加载时机 | FUSAM 已知存在异步加载点难以控制的问题 | BMM 等待 BC 运行态可用后统一加载，并在 UI 中暴露等待和加载过程 |
-| 更新缓存 | 传统 URL/浏览器缓存行为 | 对加载器和每个模组按内容 hash 建立 pin，后台检测更新并提示刷新 |
-| 调试工具 | 插件可注册调试方法 | 日志查看器集中展示系统信息、registry、mod 配置和 loader 状态 |
-
-这些差异对以下场景特别有用：
-
-- 同时启用多个大型 BC 插件，需要知道到底哪个插件加载失败或初始化报错。
-- 插件作者在本地开发，需要稳定保存本地/测试脚本入口。
-- 玩家希望减少重复网络请求，但又希望知道缓存中的模组是否已经过期。
-- 需要兼容依赖 `window.FUSAM` 的现有插件，同时逐步迁移到更强的加载与诊断体验。
+BC Mod Manager (BMM) 让你在游戏内一个简单的面板里安装、管理和加载
+[Bondage Club](https://www.bondageprojects.com/club_game/) 的模组。它兼容你已经熟悉的模组（兼容
+FUSAM），并清楚地展示哪些已加载、哪些失败、哪些有更新。
 
 ## 安装
 
@@ -54,13 +15,24 @@ FUSAM 是 Bondage Club 社区中非常重要的现有插件加载器，许多插
   name="BC Mod Manager"
 />
 
-想用书签或控制台？请看 [getting-started](getting-started)，其中包含三种注入方式和使用步骤。
+安装后，登录页或偏好设置页会出现 **BC Mod Manager** 按钮 —— 点击即可打开管理器。
+
+想用书签或控制台？请看 [getting-started](getting-started)，其中介绍了其他运行方式以及首次安装的简短步骤。
+
+## 你可以做什么
+
+- **安装和管理模组** —— 搜索、安装、移除，并在 stable / beta / dev 版本之间切换。
+- **看清加载情况** —— 加载窗口会显示哪些模组已加载、哪些失败以及失败原因。
+- **添加自己的来源** —— 让 BMM 指向自定义 registry 或直接的脚本链接。
+- **保持最新** —— BMM 通过缓存加速启动，并在模组有新版本时提醒你。
+- **兼容现有插件** —— 兼容 FUSAM 模组，大多数插件都能直接使用。
+- **多语言** —— 支持 English、简体中文、繁體中文、Deutsch、Français、Русский、Українська。
 
 ## 了解更多
 
-- [getting-started](getting-started) —— 安装与首次运行。
-- [registry-format](registry-format) —— BMM 读取的 FUSAM manifest 字段。
-- [development](development) —— 从源码构建并部署。
+- [getting-started](getting-started) —— 安装与你的第一批模组。
+- [registry-format](registry-format) —— 面向模组作者：BMM 读取的 manifest。
+- [development](development) —— 面向开发者：从源码构建 BMM。
 
 > Bondage Club、FUSAM 和各个第三方模组属于其各自作者和社区。BMM
-> 是一个独立的社区工具，加载第三方模组前请自行确认来源可信，并理解第三方脚本会在游戏页面中执行。
+> 是一个独立的社区工具 —— 请只加载你信任的来源，因为第三方脚本会在游戏页面中执行。
