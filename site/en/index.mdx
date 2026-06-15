@@ -1,0 +1,89 @@
+---
+title: BC Mod Manager
+description: A mod manager and loader for Bondage Club — FUSAM-compatible, with stronger registry management, load observability, caching, and crash diagnostics.
+order: 1
+---
+
+BC Mod Manager (BMM) is a mod manager and loader for
+[Bondage Club](https://www.bondageprojects.com/club_game/). It is compatible
+with the existing FUSAM manifest format while adding stronger registry
+management, load-status observability, cache-update prompts, BC Mod SDK takeover,
+and crash diagnostics.
+
+The build can be injected into the Bondage Club page through a userscript, a
+bookmarklet, or the console. Once running, BMM shows a launch button on the
+login / preferences screen and renders its management UI inside an isolated
+Shadow DOM, minimizing conflicts with the game's own styles and other addons.
+
+## Features
+
+- **Mod management** — install, remove, search, filter, pick a `stable`/`beta`/`dev`
+  distribution, and see the actual load status of each mod.
+- **Registry management** — several FUSAM registries are built in; you can also
+  add, edit, and refresh custom registries.
+- **Custom sources** — add `http://` or `https://` sources directly for local
+  development and ad-hoc script loading.
+- **Multiple load types** — classic scripts, ES modules, and eval / global-scope
+  execution.
+- **Load progress window** — shows pending / loading / loaded / error, timings,
+  and failure reasons, and warns about stale cached versions during startup.
+- **Mod cache** — uses the browser HTTP cache to speed up startup and detects
+  updates by content hash; caching can be turned off in settings.
+- **FUSAM compatibility layer** — exposes `window.FUSAM.present`,
+  `window.FUSAM.addons`, `registerDebugMethod`, and the modal API for addons that
+  depend on a FUSAM environment.
+- **Crash diagnostics** — captures Mod SDK hook/patch crashes, shows the call
+  stack, the related mod, and loaded mods, and supports uploading / copying a
+  crash report.
+- **Log viewer** — a built-in log panel with level filtering, search, auto-refresh,
+  and debug-report download.
+- **Localization** — currently ships EN, CN, TW, DE, FR, RU, and UA translations.
+
+## Why BMM over FUSAM
+
+FUSAM is an important existing addon loader in the Bondage Club community, and
+many addon docs recommend installing through it. BMM does not aim to break that
+ecosystem — it stays compatible with FUSAM manifests and part of the runtime API
+while filling in capabilities better suited to complex mod combinations and
+development.
+
+| Capability | FUSAM | BC Mod Manager |
+| --- | --- | --- |
+| Manifest ecosystem | FUSAM addon manifest | Directly compatible with FUSAM manifests, plus multiple coexisting registries |
+| Custom sources | Dev source via `?fusam=` | Custom extensions persisted in the UI, including `file://` local scripts |
+| Load observability | Mostly enable/disable | Per-mod pending/loading/loaded/error, timing, and error detail |
+| Load timing | Known hard-to-control async load points | Loads after the BC runtime is ready, exposing the wait and load process in the UI |
+| Update cache | Traditional URL / browser cache | Content-hash pins for the loader and each mod, background update checks with refresh prompts |
+| Debug tools | Addons can register debug methods | Log viewer centralizes system info, registries, mod config, and loader status |
+
+These differences are especially useful when you:
+
+- run several large BC addons at once and need to know exactly which one failed
+  to load or errored during init;
+- develop addons locally and need a stable place to keep local/test script
+  entries;
+- want fewer repeat network requests but still want to know whether a cached mod
+  is out of date;
+- need to stay compatible with addons that depend on `window.FUSAM` while
+  gradually moving to a stronger loading and diagnostics experience.
+
+## Install
+
+<UserscriptInstall
+  url="https://bondage-studio.github.io/bc-mod-manager/bmm.user.js"
+  name="BC Mod Manager"
+/>
+
+Prefer a bookmarklet or the console? See [getting-started](getting-started) for
+all three injection methods and a usage walkthrough.
+
+## Learn more
+
+- [getting-started](getting-started) — install and first run.
+- [registry-format](registry-format) — the FUSAM manifest fields BMM reads.
+- [development](development) — build BMM from source and deploy.
+
+> Bondage Club, FUSAM, and the third-party mods belong to their respective
+> authors and communities. BMM is an independent community tool — verify that a
+> source is trustworthy before loading third-party mods, and understand that
+> third-party scripts run on the game page.
