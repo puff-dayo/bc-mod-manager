@@ -1,6 +1,7 @@
 import {Component} from "preact";
 import {ModService} from "@/service/ModService";
 import {ModLoaderService} from "@/service/ModLoaderService";
+import {ModalStore} from "@/ui/store/ModalStore";
 import type {ModConfig} from "@/domain/Mod";
 import type {FusamAddon} from "@/domain/Registry";
 import type {ModLoadEntry, ModLoadStatus} from "@/domain/ModLoad";
@@ -178,8 +179,8 @@ export default class ModManagerPage extends Component<{}, ModManagerState> {
     }
   };
 
-  handleRemoveMod = (modId: string, registryId: string) => {
-    if (confirm(t('confirm-remove-mod'))) {
+  handleRemoveMod = async (modId: string, registryId: string) => {
+    if (await ModalStore.confirm(t('confirm-remove-mod'), {confirmLabel: t('button-remove-mod')})) {
       const uniqueKey = `${modId}_${registryId}`;
       ModService.removeConfig(modId, registryId);
 
